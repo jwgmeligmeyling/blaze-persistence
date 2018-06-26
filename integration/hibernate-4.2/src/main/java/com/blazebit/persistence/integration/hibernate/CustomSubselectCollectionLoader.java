@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.integration.hibernate.base;
+package com.blazebit.persistence.integration.hibernate;
 
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.loader.collection.SubselectOneToManyLoader;
+import org.hibernate.loader.collection.SubselectCollectionLoader;
 import org.hibernate.persister.collection.QueryableCollection;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
- *
- * @author Christian Beikov
+ * @author Jan-Willem Gmelig Meyling
  * @since 1.2.0
  */
-public class CustomSubselectOneToManyLoader extends SubselectOneToManyLoader {
-    public CustomSubselectOneToManyLoader(QueryableCollection persister, String subquery, java.util.Collection entityKeys, QueryParameters queryParameters, Map<String, int[]> namedParameterLocMap, SessionFactoryImplementor factory, LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
+public class CustomSubselectCollectionLoader extends SubselectCollectionLoader {
+
+    public CustomSubselectCollectionLoader(QueryableCollection persister, String subquery, Collection entityKeys, QueryParameters queryParameters, Map<String, int[]> namedParameterLocMap, SessionFactoryImplementor factory, LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
         super(persister, subquery, entityKeys, queryParameters, namedParameterLocMap, factory, loadQueryInfluencers);
         String originalSql = queryParameters.getFilteredSQL();
         if (originalSql.startsWith("with ")) {
@@ -60,4 +61,5 @@ public class CustomSubselectOneToManyLoader extends SubselectOneToManyLoader {
             this.sql = sb.toString();
         }
     }
+
 }

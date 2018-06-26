@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.integration.hibernate.base;
+package com.blazebit.persistence.integration.hibernate;
 
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
