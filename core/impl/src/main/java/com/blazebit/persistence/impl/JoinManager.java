@@ -1927,10 +1927,10 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                     // If there is a JoinAliasInfo for the path element, we have to use the alias
                     // We can only "consider" this path a single valued association id when we are about to "remove" the id part
                     if (idRemovable) {
-                        Type<?> maybeSingularAssociationType = ((JoinAliasInfo) a).getJoinNode().getNodeType();
+                        JoinNode joinNode = ((JoinAliasInfo) a).getJoinNode();
                         PathElementExpression maybeSingularAssociationIdExpression = pathElements.get(maybeSingularAssociationIdIndex);
-
-                        return isId(maybeSingularAssociationType, maybeSingularAssociationIdExpression);
+                        ExtendedManagedType managedType = metamodel.getManagedType(ExtendedManagedType.class, joinNode.getJavaType());
+                        return managedType.getAttributes().containsKey(joinResult.joinFields(maybeSingularAssociationName + "." + maybeSingularAssociationIdExpression));
                     } else {
                         // Otherwise we return false in order to signal that a normal implicit join should be done
                         return false;
@@ -1976,10 +1976,9 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
             return false;
         }
 
-        Type<?> maybeSingularAssociationType = maybeSingularAssociationJoinResult.getAttributeType();
         PathElementExpression maybeSingularAssociationIdExpression = pathElements.get(maybeSingularAssociationIdIndex);
-
-        return isId(maybeSingularAssociationType, maybeSingularAssociationIdExpression);
+        ExtendedManagedType managedType = metamodel.getManagedType(ExtendedManagedType.class, parent.getJavaType());
+        return managedType.getAttributes().containsKey(joinResult.joinFields(maybeSingularAssociationName + "." + maybeSingularAssociationIdExpression));
     }
 
     private boolean isId(Type<?> type, Expression idExpression) {
