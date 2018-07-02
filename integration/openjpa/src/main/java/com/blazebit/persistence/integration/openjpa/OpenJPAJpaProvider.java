@@ -17,6 +17,7 @@
 package com.blazebit.persistence.integration.openjpa;
 
 import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.JoinTable;
 import com.blazebit.persistence.spi.JpaProvider;
 import org.apache.openjpa.persistence.OpenJPAQuery;
@@ -24,7 +25,9 @@ import org.apache.openjpa.persistence.OpenJPAQuery;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.IdentifiableType;
 import javax.persistence.metamodel.ManagedType;
+import javax.persistence.metamodel.SingularAttribute;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -276,7 +279,9 @@ public class OpenJPAJpaProvider implements JpaProvider {
 
     @Override
     public List<String> getIdentifierOrUniqueKeyEmbeddedPropertyNames(EntityType<?> owner, String attributeName) {
-        return Collections.emptyList();
+        IdentifiableType type = (IdentifiableType) owner.getSingularAttribute(attributeName).getType();
+        SingularAttribute<?,?> key = JpaMetamodelUtils.getIdAttribute(type);
+        return Collections.singletonList(key.getName());
     }
 
 }

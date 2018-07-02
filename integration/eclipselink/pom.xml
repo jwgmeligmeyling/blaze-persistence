@@ -52,6 +52,12 @@
             <artifactId>blaze-apt-utils</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>blaze-persistence-core-parser</artifactId>
+            <scope>provided</scope>
+        </dependency>
         
         <dependency>
             <groupId>${project.groupId}</groupId>

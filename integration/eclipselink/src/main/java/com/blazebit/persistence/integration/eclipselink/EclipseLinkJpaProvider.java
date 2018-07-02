@@ -17,6 +17,7 @@
 package com.blazebit.persistence.integration.eclipselink;
 
 import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.JoinTable;
 import com.blazebit.persistence.spi.JpaProvider;
 import org.eclipse.persistence.internal.jpa.metamodel.AttributeImpl;
@@ -32,6 +33,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.IdentifiableType;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.PluralAttribute;
 import javax.persistence.metamodel.SingularAttribute;
@@ -393,7 +395,9 @@ public class EclipseLinkJpaProvider implements JpaProvider {
 
     @Override
     public List<String> getIdentifierOrUniqueKeyEmbeddedPropertyNames(EntityType<?> owner, String attributeName) {
-        return Collections.emptyList();
+        IdentifiableType type = (IdentifiableType) owner.getSingularAttribute(attributeName).getType();
+        SingularAttribute<?,?> key = JpaMetamodelUtils.getIdAttribute(type);
+        return Collections.singletonList(key.getName());
     }
 
 }

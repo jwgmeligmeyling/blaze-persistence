@@ -17,6 +17,7 @@
 package com.blazebit.persistence.integration.datanucleus;
 
 import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.JoinTable;
 import com.blazebit.persistence.spi.JpaProvider;
 import org.datanucleus.ExecutionContext;
@@ -30,6 +31,7 @@ import org.datanucleus.metadata.KeyMetaData;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.IdentifiableType;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.PluralAttribute;
 import javax.persistence.metamodel.SingularAttribute;
@@ -411,7 +413,9 @@ public class DataNucleus51JpaProvider implements JpaProvider {
 
     @Override
     public List<String> getIdentifierOrUniqueKeyEmbeddedPropertyNames(EntityType<?> owner, String attributeName) {
-        return Collections.emptyList();
+        IdentifiableType type = (IdentifiableType) owner.getSingularAttribute(attributeName).getType();
+        SingularAttribute<?,?> key = JpaMetamodelUtils.getIdAttribute(type);
+        return Collections.singletonList(key.getName());
     }
 
 }
