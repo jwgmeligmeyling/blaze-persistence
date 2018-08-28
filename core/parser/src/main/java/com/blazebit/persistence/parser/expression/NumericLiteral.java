@@ -27,7 +27,7 @@ public class NumericLiteral extends AbstractNumericExpression implements Literal
 
     public NumericLiteral(String value, NumericType numericType) {
         super(numericType);
-        this.value = value;
+        this.value = value.intern();
     }
 
     @Override

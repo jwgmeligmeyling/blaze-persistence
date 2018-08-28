@@ -28,7 +28,7 @@ public class EntityLiteral extends AbstractExpression implements LiteralExpressi
 
     public EntityLiteral(Class<?> value, String originalExpression) {
         this.value = value;
-        this.originalExpression = originalExpression;
+        this.originalExpression = originalExpression.intern();
     }
 
     @Override

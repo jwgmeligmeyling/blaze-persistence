@@ -28,7 +28,7 @@ public class EnumLiteral extends AbstractExpression implements LiteralExpression
 
     public EnumLiteral(Enum<?> value, String originalExpression) {
         this.value = value;
-        this.originalExpression = originalExpression;
+        this.originalExpression = originalExpression.intern();
     }
 
     @Override

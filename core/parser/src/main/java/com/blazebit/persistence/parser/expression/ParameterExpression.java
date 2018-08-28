@@ -37,7 +37,7 @@ public class ParameterExpression extends AbstractExpression {
     }
 
     public ParameterExpression(String name, Object value, boolean collectionValued) {
-        this.name = name;
+        this.name = name.intern();
         this.value = value;
         this.collectionValued = collectionValued;
     }
@@ -62,7 +62,7 @@ public class ParameterExpression extends AbstractExpression {
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.name = name.intern();
     }
 
     public Object getValue() {

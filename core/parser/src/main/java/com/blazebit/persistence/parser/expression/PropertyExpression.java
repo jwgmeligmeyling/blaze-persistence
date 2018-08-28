@@ -27,7 +27,7 @@ public class PropertyExpression extends AbstractExpression implements PathElemen
     private final String property;
 
     public PropertyExpression(String property) {
-        this.property = property;
+        this.property = property.intern();
     }
 
     @Override
@@ -64,6 +64,9 @@ public class PropertyExpression extends AbstractExpression implements PathElemen
 
     @Override
     public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
         if (obj == null) {
             return false;
         }

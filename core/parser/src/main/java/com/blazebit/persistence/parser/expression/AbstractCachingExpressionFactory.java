@@ -219,6 +219,7 @@ public abstract class AbstractCachingExpressionFactory extends AbstractExpressio
     }
 
     private <E extends Expression> E getOrDefault(String cacheName, ExpressionFactory expressionFactory, String expression, boolean allowQuantifiedPredicates, MacroConfiguration macroConfiguration, ExpressionSupplier defaultExpressionSupplier) {
+        expression = expression.intern();
         // Find the expression cache entry
         ExpressionCacheEntry exprEntry = expressionCache.get(cacheName, expression);
         MacroConfiguration macroKey = null;

@@ -29,7 +29,7 @@ public class TreatExpression extends AbstractExpression implements PathElementEx
 
     public TreatExpression(Expression expression, String type) {
         this.expression = expression;
-        this.type = type;
+        this.type = type.intern();
     }
 
     @Override

@@ -26,7 +26,7 @@ public class StringLiteral extends AbstractExpression implements LiteralExpressi
     private final String value;
 
     public StringLiteral(String value) {
-        this.value = value;
+        this.value = value.intern();
     }
 
     @Override
