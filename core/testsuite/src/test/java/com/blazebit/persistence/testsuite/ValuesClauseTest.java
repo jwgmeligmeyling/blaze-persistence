@@ -228,7 +228,7 @@ public class ValuesClauseTest extends AbstractCoreTest {
 
         String expected = ""
                 + "SELECT intEntity.name, doc.name FROM IntIdEntity(2 VALUES) intEntity LEFT JOIN Document doc" +
-                onClause("intEntity.id = :intEntity_id_0 OR intEntity.name = :intEntity_name_0 OR intEntity.value = :intEntity_value_0 OR intEntity.id = :intEntity_id_1 OR intEntity.name = :intEntity_name_1 OR intEntity.value = :intEntity_value_1 AND doc.name = intEntity.name") +
+                onClause("( intEntity.id = :intEntity_id_0 AND intEntity.name = :intEntity_name_0 AND intEntity.value = :intEntity_value_0 ) OR ( intEntity.id = :intEntity_id_1 AND intEntity.name = :intEntity_name_1 AND intEntity.value = :intEntity_value_1 ) AND doc.name = intEntity.name") +
                 " ORDER BY " + renderNullPrecedence("intEntity.name", "ASC", "LAST");
 
         assertEquals(expected, cb.getQueryString());
@@ -257,7 +257,7 @@ public class ValuesClauseTest extends AbstractCoreTest {
 
         String expected = ""
                 + "SELECT intEntity.name, doc.name FROM IntIdEntity(1 VALUES) intEntity LEFT JOIN Document doc" +
-                onClause("intEntity.id = :intEntity_id_0 OR intEntity.name = :intEntity_name_0 OR intEntity.value = :intEntity_value_0 AND doc.name = intEntity.name") +
+                onClause("( intEntity.id = :intEntity_id_0 AND intEntity.name = :intEntity_name_0 AND intEntity.value = :intEntity_value_0 ) AND doc.name = intEntity.name") +
                 " ORDER BY " + renderNullPrecedence("intEntity.name", "ASC", "LAST");
 
         assertEquals(expected, cb.getQueryString());

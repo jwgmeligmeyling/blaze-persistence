@@ -1835,7 +1835,7 @@ public abstract class AbstractCommonQueryBuilder<QueryResultType, BuilderType, S
         for (JoinNode node : joinManager.getEntityFunctionNodes()) {
             Class<?> clazz = node.getJavaType();
             int valueCount = node.getValueCount();
-            boolean identifiableReference = node.getValuesIdName() != null;
+            boolean identifiableReference = !node.getValuesIdNames().isEmpty();
             String rootAlias = node.getAlias();
             String castedParameter = node.getValuesCastedParameter();
             String[] attributes = node.getValuesAttributes();
@@ -1958,12 +1958,6 @@ public abstract class AbstractCommonQueryBuilder<QueryResultType, BuilderType, S
         if (clazz == ValuesEntity.class) {
             sb.append("e.");
             attributeParameter[0] = mainQuery.dbmsDialect.needsCastParameters() ? castedParameter : "?";
-            sb.append(attributes[0]);
-            sb.append(',');
-        } else if (identifiableReference) {
-            sb.append("e.");
-            String[] columnTypes = mainQuery.metamodel.getManagedType(ExtendedManagedType.class, clazz).getAttribute(attributes[0]).getColumnTypes();
-            attributeParameter[0] = getCastedParameters(new StringBuilder(), mainQuery.dbmsDialect, columnTypes);
             sb.append(attributes[0]);
             sb.append(',');
         } else {

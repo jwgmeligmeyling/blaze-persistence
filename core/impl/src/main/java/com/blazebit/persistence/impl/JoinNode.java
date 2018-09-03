@@ -74,7 +74,7 @@ public class JoinNode implements From, ExpressionModifier, BaseNode {
     private final EntityType<?> treatType;
     private final String valuesTypeName;
     private final int valueCount;
-    private final String valuesIdName;
+    private final Set<String> valuesIdNames;
     private final String valuesCastedParameter;
     private final String[] valuesAttributes;
     private final String qualificationExpression;
@@ -106,7 +106,7 @@ public class JoinNode implements From, ExpressionModifier, BaseNode {
         this.qualificationExpression = treatedJoinNode.qualificationExpression;
         this.valuesTypeName = treatedJoinNode.valuesTypeName;
         this.valueCount = treatedJoinNode.valueCount;
-        this.valuesIdName = treatedJoinNode.valuesIdName;
+        this.valuesIdNames = treatedJoinNode.valuesIdNames;
         this.valuesCastedParameter = treatedJoinNode.valuesCastedParameter;
         this.valuesAttributes = treatedJoinNode.valuesAttributes;
         this.aliasInfo = treatedJoinAliasInfo;
@@ -126,7 +126,7 @@ public class JoinNode implements From, ExpressionModifier, BaseNode {
         this.treatType = treatType;
         this.valuesTypeName = null;
         this.valueCount = 0;
-        this.valuesIdName = null;
+        this.valuesIdNames = Collections.emptySet();
         this.valuesCastedParameter = null;
         this.valuesAttributes = null;
         this.qualificationExpression = qualificationExpression;
@@ -150,7 +150,7 @@ public class JoinNode implements From, ExpressionModifier, BaseNode {
         onUpdate(null);
     }
 
-    private JoinNode(ManagedType<?> nodeType, String valuesTypeName, int valueCount, String valuesIdName, String valuesCastedParameter, String[] valuesAttributes, JoinAliasInfo aliasInfo) {
+    private JoinNode(ManagedType<?> nodeType, String valuesTypeName, int valueCount, Set<String> valuesIdNames, String valuesCastedParameter, String[] valuesAttributes, JoinAliasInfo aliasInfo) {
         this.parent = null;
         this.parentTreeNode = null;
         this.joinType = null;
@@ -160,7 +160,7 @@ public class JoinNode implements From, ExpressionModifier, BaseNode {
         this.treatType = null;
         this.valuesTypeName = valuesTypeName;
         this.valueCount = valueCount;
-        this.valuesIdName = valuesIdName;
+        this.valuesIdNames = valuesIdNames == null ? Collections.<String>emptySet() : valuesIdNames;
         this.valuesCastedParameter = valuesCastedParameter;
         this.valuesAttributes = valuesAttributes;
         this.qualificationExpression = null;
@@ -173,8 +173,8 @@ public class JoinNode implements From, ExpressionModifier, BaseNode {
         return new JoinNode(null, null, null, null, null, nodeType, null, null, aliasInfo);
     }
 
-    public static JoinNode createValuesRootNode(ManagedType<?> nodeType, String valuesTypeName, int valueCount, String valuesIdName, String valuesCastedParameter, String[] valuesAttributes, JoinAliasInfo aliasInfo) {
-        return new JoinNode(nodeType, valuesTypeName, valueCount, valuesIdName, valuesCastedParameter, valuesAttributes, aliasInfo);
+    public static JoinNode createValuesRootNode(ManagedType<?> nodeType, String valuesTypeName, int valueCount, Set<String> valuesIdNames, String valuesCastedParameter, String[] valuesAttributes, JoinAliasInfo aliasInfo) {
+        return new JoinNode(nodeType, valuesTypeName, valueCount, valuesIdNames, valuesCastedParameter, valuesAttributes, aliasInfo);
     }
 
     public static JoinNode createCorrelationRootNode(JoinNode correlationParent, String correlationPath, Type<?> nodeType, EntityType<?> treatType, JoinAliasInfo aliasInfo) {
@@ -193,7 +193,7 @@ public class JoinNode implements From, ExpressionModifier, BaseNode {
         // NOTE: no cloning of treatedJoinNodes and entityJoinNodes is intentional
         JoinNode newNode;
         if (valueCount > 0) {
-            newNode = createValuesRootNode((ManagedType<?>) nodeType, valuesTypeName, valueCount, valuesIdName, valuesCastedParameter, valuesAttributes, aliasInfo);
+            newNode = createValuesRootNode((ManagedType<?>) nodeType, valuesTypeName, valueCount, valuesIdNames, valuesCastedParameter, valuesAttributes, aliasInfo);
         } else if (joinType == null) {
             newNode = createRootNode((EntityType<?>) nodeType, aliasInfo);
         } else {
@@ -587,8 +587,8 @@ public class JoinNode implements From, ExpressionModifier, BaseNode {
         return valueCount;
     }
 
-    public String getValuesIdName() {
-        return valuesIdName;
+    public Set<String> getValuesIdNames() {
+        return valuesIdNames;
     }
 
     String getValuesTypeName() {

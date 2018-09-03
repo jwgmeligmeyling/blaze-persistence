@@ -346,13 +346,16 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
         }
         // TODO: we should pad the value count to avoid filling query caches
         ManagedType<?> managedType = mainQuery.metamodel.getManagedType(clazz);
-        String idAttributeName = null;
-        Set<Attribute<?, ?>> attributeSet;
+        Set<String> idAttributeNames = null;
+        Set<Attribute<?, ?>> attributeSet = new TreeSet<>(JpaMetamodelUtils.ATTRIBUTE_NAME_COMPARATOR);
 
         if (identifiableReference) {
-            SingularAttribute<?, ?> idAttribute = JpaMetamodelUtils.getSingleIdAttribute((EntityType<?>) managedType);
-            idAttributeName = idAttribute.getName();
-            attributeSet = (Set<Attribute<?, ?>>) (Set<?>) Collections.singleton(idAttribute);
+            Set<SingularAttribute<?, ?>> idAttributes = JpaMetamodelUtils.getIdAttributes((EntityType<?>) managedType);
+            attributeSet.addAll(idAttributes);
+            idAttributeNames = new LinkedHashSet<>();
+            for (SingularAttribute<?, ?> attribute : idAttributes) {
+                idAttributeNames.add(attribute.getName());
+            }
         } else {
             Set<Attribute<?, ?>> originalAttributeSet = (Set<Attribute<?, ?>>) (Set) managedType.getAttributes();
             attributeSet = new TreeSet<>(JpaMetamodelUtils.ATTRIBUTE_NAME_COMPARATOR);
@@ -371,7 +374,7 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
         parameterManager.registerValuesParameter(rootAlias, valueClazz, parameterNames, pathExpressions, queryBuilder);
 
         JoinAliasInfo rootAliasInfo = new JoinAliasInfo(rootAlias, rootAlias, true, true, aliasManager);
-        JoinNode rootNode = JoinNode.createValuesRootNode(managedType, typeName, valueCount, idAttributeName, castedParameter, attributes, rootAliasInfo);
+        JoinNode rootNode = JoinNode.createValuesRootNode(managedType, typeName, valueCount, idAttributeNames, castedParameter, attributes, rootAliasInfo);
         rootAliasInfo.setJoinNode(rootNode);
         rootNodes.add(rootNode);
         // register root alias in aliasManager
@@ -399,14 +402,6 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
             pathExpressions[0] = new SimpleValueRetriever();
             String attributeName = attributeSet.iterator().next().getName();
             attributes[0] = attributeName;
-            for (int j = 0; j < valueCount; j++) {
-                parameterNames[j][0] = prefix + '_' + attributeName + '_' + j;
-            }
-        } else if (identifiableReference) {
-            Attribute<?, ?> attribute = attributeSet.iterator().next();
-            String attributeName = attribute.getName();
-            attributes[0] = attributeName;
-            pathExpressions[0] = com.blazebit.reflection.ExpressionUtils.getExpression(clazz, attributeName);
             for (int j = 0; j < valueCount; j++) {
                 parameterNames[j][0] = prefix + '_' + attributeName + '_' + j;
             }
@@ -709,8 +704,10 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                 } else {
                     if (type instanceof EntityType<?>) {
                         sb.append(((EntityType) type).getName());
-                        if (rootNode.getValuesIdName() != null) {
-                            sb.append('.').append(rootNode.getValuesIdName());
+                        Set<String> valuesIdNames = rootNode.getValuesIdNames();
+                        if (valuesIdNames != null && ! valuesIdNames.isEmpty()) {
+                            String next = valuesIdNames.iterator().next();
+                            sb.append(".").append(next);
                         }
                     } else {
                         sb.append(rootNode.getValuesTypeName());
@@ -865,6 +862,10 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
             String prefix = rootNode.getAlias();
 
             for (int i = 0; i < valueCount; i++) {
+                if (attributes.length > 1) {
+                    sb.append("( ");
+                }
+
                 for (int j = 0; j < attributes.length; j++) {
                     if (typeName != null) {
                         sb.append("TREAT_");
@@ -887,8 +888,18 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                     sb.append('_');
                     sb.append(attributes[j]);
                     sb.append('_').append(i);
-                    sb.append(" OR ");
+
+                    sb.append(" AND ");
+
                 }
+
+                sb.setLength(sb.length() - " AND ".length());
+
+                if (attributes.length > 1) {
+                    sb.append(" )");
+                }
+
+                sb.append(" OR ");
             }
 
             sb.setLength(sb.length() - " OR ".length());
