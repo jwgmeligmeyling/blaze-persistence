@@ -755,11 +755,15 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                     if (syntheticSubqueryValuesWhereClauseConjuncts.isEmpty()) {
                         syntheticSubqueryValuesWhereClauseConjuncts.add("1=1");
                     }
-                    String exampleAttributeName = "value";
+                    Set<SingularAttribute<?,?>> idAttributeSet = new LinkedHashSet<>();
+                    Set<String> idAttributeNameSet = new LinkedHashSet<>();
                     if (rootNode.getType() instanceof IdentifiableType<?>) {
-                        exampleAttributeName = JpaMetamodelUtils.getSingleIdAttribute(rootNode.getEntityType()).getName();
+                        idAttributeSet = JpaMetamodelUtils.getIdAttributes(rootNode.getEntityType());
+                        for (SingularAttribute<?, ?> attribute : idAttributeSet) {
+                            idAttributeNameSet.add(attribute.getName());
+                            syntheticSubqueryValuesWhereClauseConjuncts.add(rootNode.getAlias() + "." + attribute.getName() + " IS NULL");
+                        }
                     }
-                    syntheticSubqueryValuesWhereClauseConjuncts.add(rootNode.getAlias() + "." + exampleAttributeName + " IS NULL");
                 }
             }
             if (!rootNode.getNodes().isEmpty()) {

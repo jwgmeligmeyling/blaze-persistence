@@ -595,7 +595,7 @@ public abstract class AbstractModificationCriteriaBuilder<T, X extends BaseModif
             }
             
             // TODO: actually we should also check if the attribute is a @GeneratedValue
-            if (!mainQuery.dbmsDialect.supportsReturningColumns() && !JpaMetamodelUtils.getSingleIdAttribute(entityType).equals(lastPathElem)) {
+            if (!mainQuery.dbmsDialect.supportsReturningColumns() && !JpaMetamodelUtils.getIdAttributes(entityType).contains(lastPathElem)) {
                 throw new IllegalArgumentException("Returning the query attribute [" + lastPathElem.getName() + "] is not supported by the dbms, only generated keys can be returned!");
             }
 
