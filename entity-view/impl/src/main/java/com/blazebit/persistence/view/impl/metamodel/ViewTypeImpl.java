@@ -24,10 +24,7 @@ import com.blazebit.persistence.view.metamodel.MethodAttribute;
 import com.blazebit.persistence.view.metamodel.ViewFilterMapping;
 
 import javax.persistence.metamodel.ManagedType;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -39,6 +36,7 @@ public class ViewTypeImpl<X> extends ManagedViewTypeImpl<X> implements ViewTypeI
     private final String name;
     private final String lockOwner;
     private final MethodAttribute<? super X, ?> idAttribute;
+    private final Set<MethodAttribute<? super X, ?>> idAttributes;
     private final MethodAttribute<? super X, ?> versionAttribute;
     private final Map<String, ViewFilterMapping> viewFilters;
 
@@ -72,6 +70,11 @@ public class ViewTypeImpl<X> extends ManagedViewTypeImpl<X> implements ViewTypeI
 
         this.viewFilters = Collections.unmodifiableMap(viewFilters);
         this.idAttribute = viewMapping.getIdAttribute().getMethodAttribute(this, -1, -1, context);
+        Set<MethodAttribute<? super X,?>> idAttributeSet = new HashSet<>();
+        for (MethodAttributeMapping methodAttributeMapping : viewMapping.getIdAttributes()){
+            idAttributeSet.add(methodAttributeMapping.getMethodAttribute(this, -1, -1, context));
+        }
+        this.idAttributes = idAttributeSet;
 
         if (getLockMode() != LockMode.NONE) {
             if (viewMapping.getVersionAttribute() != null) {
@@ -136,6 +139,11 @@ public class ViewTypeImpl<X> extends ManagedViewTypeImpl<X> implements ViewTypeI
     @Override
     public MethodAttribute<? super X, ?> getIdAttribute() {
         return idAttribute;
+    }
+
+    @Override
+    public Set<MethodAttribute<? super X, ?>> getIdAttributes() {
+        return idAttributes;
     }
 
     @Override

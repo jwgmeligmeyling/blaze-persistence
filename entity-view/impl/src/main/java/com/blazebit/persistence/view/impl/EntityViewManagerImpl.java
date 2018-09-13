@@ -93,11 +93,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SingularAttribute;
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Field;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -244,9 +241,15 @@ public class EntityViewManagerImpl implements EntityViewManager {
     public <T> T find(EntityManager entityManager, EntityViewSetting<T, CriteriaBuilder<T>> entityViewSetting, Object entityId) {
         ViewTypeImpl<T> managedViewType = metamodel.view(entityViewSetting.getEntityViewClass());
         EntityType<?> entityType = (EntityType<?>) managedViewType.getJpaManagedType();
-        SingularAttribute<?, ?> idAttribute = JpaMetamodelUtils.getSingleIdAttribute(entityType);
-        CriteriaBuilder<?> cb = cbf.create(entityManager, managedViewType.getEntityClass())
-                .where(idAttribute.getName()).eq(entityId);
+        Set<SingularAttribute<?, ?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(entityType);
+        CriteriaBuilder<?> cb = cbf.create(entityManager, managedViewType.getEntityClass());
+        List<String> entityIdFieldNames = new ArrayList<>();
+        for (Field field : Arrays.asList(entityId.getClass().getFields())){
+            entityIdFieldNames.add(field.getName());
+        }
+        for (SingularAttribute<?,?> idAttribute : idAttributeSet){
+            cb.where(idAttribute.getName()).in(entityIdFieldNames);
+        }
         List<T> resultList = applySetting(entityViewSetting, cb).getResultList();
         return resultList.isEmpty() ? null : resultList.get(0);
     }

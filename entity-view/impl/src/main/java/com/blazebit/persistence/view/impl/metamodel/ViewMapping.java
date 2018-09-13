@@ -40,6 +40,8 @@ public interface ViewMapping extends Comparable<ViewMapping>, EntityViewMapping 
 
     void setIdAttributeMapping(MethodAttributeMapping idAttribute);
 
+    void setIdAttributeMappings(Set<MethodAttributeMapping> idAttributes);
+
     void setVersionAttributeMapping(MethodAttributeMapping versionAttribute);
 
     LockMode getResolvedLockMode();
@@ -73,6 +75,8 @@ public interface ViewMapping extends Comparable<ViewMapping>, EntityViewMapping 
     ManagedViewTypeImplementor<?> getManagedViewType(MetamodelBuildingContext context);
 
     MethodAttributeMapping getIdAttribute();
+
+    Set<MethodAttributeMapping> getIdAttributes();
 
     MethodAttributeMapping getVersionAttribute();
 

@@ -13,6 +13,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.persistence.EntityManager;
+import javax.persistence.IdClass;
 import java.util.List;
 
 public class IdClassTest extends AbstractEntityViewTest {
@@ -48,11 +49,13 @@ public class IdClassTest extends AbstractEntityViewTest {
 
     @Test
     public void idClassFindTest(){
+        build(IdClassEntityView.class);
+
         EntityViewSetting<IdClassEntityView, CriteriaBuilder<IdClassEntityView>> setting = EntityViewSetting.create(IdClassEntityView.class);
         IdClassEntityId id1 = new IdClassEntityId(4,"c");
-        IdClassEntityView fe1 = evm.find(em,setting,id1);
-        Assert.assertEquals(Integer.valueOf(4),fe1.getKey1());
-        Assert.assertEquals("c",fe1.getKey2());
+        IdClassEntityView ev1 = evm.find(em,setting,id1);
+        Assert.assertEquals(Integer.valueOf(4),ev1.getKey1());
+        Assert.assertEquals("c",ev1.getKey2());
     }
 
 }

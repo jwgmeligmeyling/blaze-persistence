@@ -139,6 +139,11 @@ public class ConvertedViewMapping implements ViewMapping {
     }
 
     @Override
+    public void setIdAttributeMappings(Set<MethodAttributeMapping> idAttributes) {
+        delegate.setIdAttributeMappings(idAttributes);
+    }
+
+    @Override
     public void setVersionAttributeMapping(MethodAttributeMapping versionAttribute) {
         delegate.setVersionAttributeMapping(versionAttribute);
     }

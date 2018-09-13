@@ -44,6 +44,13 @@ public interface ViewType<X> extends ManagedViewType<X> {
     public MethodAttribute<? super X, ?> getIdAttribute();
 
     /**
+     * Returns the id attributes of the entity view.
+     *
+     * @return The id attributes of the entity view
+     */
+    public Set<MethodAttribute<? super X, ?>> getIdAttributes();
+
+    /**
      * Returns the version attribute of the entity view if there is any, or null.
      *
      * @return The version attribute of the entity view, or null

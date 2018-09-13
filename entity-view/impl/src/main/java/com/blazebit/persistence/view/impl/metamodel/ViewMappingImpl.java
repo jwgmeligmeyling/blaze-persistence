@@ -74,6 +74,7 @@ public class ViewMappingImpl implements ViewMapping {
     private final Map<String, ConstructorMapping> constructorNameMap = new TreeMap<>();
 
     private MethodAttributeMapping idAttribute;
+    private Set<MethodAttributeMapping> idAttributes;
     private MethodAttributeMapping versionAttribute;
     private String lockOwner;
     private LockMode lockMode;
@@ -229,6 +230,11 @@ public class ViewMappingImpl implements ViewMapping {
     @Override
     public void setIdAttributeMapping(MethodAttributeMapping idAttribute) {
         this.idAttribute = idAttribute;
+    }
+
+    @Override
+    public void setIdAttributeMappings(Set<MethodAttributeMapping> idAttributes) {
+        this.idAttributes = idAttributes;
     }
 
     @Override
