@@ -30,6 +30,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -39,7 +40,7 @@ import java.util.List;
 public abstract class AbstractPluralAttributeFlusher<X extends AbstractPluralAttributeFlusher<X, A, R, E, V>, A, R, E, V> extends AttributeFetchGraphNode<X> implements DirtyAttributeFlusher<X, E, V>, PluralDirtyChecker<V, E> {
 
     protected final Class<?> ownerEntityClass;
-    protected final String ownerIdAttributeName;
+    protected final Set<String> ownerIdAttributeNames;
     protected final FlushStrategy flushStrategy;
     protected final AttributeAccessor entityAttributeMapper;
     protected final InitialValueAttributeAccessor viewAttributeAccessor;
@@ -57,11 +58,11 @@ public abstract class AbstractPluralAttributeFlusher<X extends AbstractPluralAtt
     protected final List<CollectionElementAttributeFlusher<E, V>> elementFlushers;
 
     @SuppressWarnings("unchecked")
-    public AbstractPluralAttributeFlusher(String attributeName, String mapping, boolean fetch, Class<?> ownerEntityClass, String ownerIdAttributeName, FlushStrategy flushStrategy, AttributeAccessor entityAttributeMapper, InitialValueAttributeAccessor viewAttributeAccessor, boolean optimisticLockProtected, boolean collectionUpdatable,
+    public AbstractPluralAttributeFlusher(String attributeName, String mapping, boolean fetch, Class<?> ownerEntityClass, Set<String> ownerIdAttributeNames, FlushStrategy flushStrategy, AttributeAccessor entityAttributeMapper, InitialValueAttributeAccessor viewAttributeAccessor, boolean optimisticLockProtected, boolean collectionUpdatable,
                                           boolean viewOnlyDeleteCascaded, boolean jpaProviderDeletesCollection, CollectionRemoveListener cascadeDeleteListener, CollectionRemoveListener removeListener, TypeDescriptor elementDescriptor) {
         super(attributeName, mapping, fetch, elementDescriptor.getViewToEntityMapper() == null ? null : elementDescriptor.getViewToEntityMapper().getFullGraphNode());
         this.ownerEntityClass = ownerEntityClass;
-        this.ownerIdAttributeName = ownerIdAttributeName;
+        this.ownerIdAttributeNames = ownerIdAttributeNames;
         this.flushStrategy = flushStrategy;
         this.entityAttributeMapper = entityAttributeMapper;
         this.viewAttributeAccessor = viewAttributeAccessor;
@@ -102,7 +103,7 @@ public abstract class AbstractPluralAttributeFlusher<X extends AbstractPluralAtt
     protected AbstractPluralAttributeFlusher(AbstractPluralAttributeFlusher<?, ?, ?, ?, ?> original, boolean fetch, PluralFlushOperation flushOperation, List<? extends A> collectionActions, List<CollectionElementAttributeFlusher<E, V>> elementFlushers) {
         super(original.attributeName, original.mapping, fetch, elementFlushers == null ? original.nestedGraphNode : computeElementFetchGraphNode(elementFlushers));
         this.ownerEntityClass = original.ownerEntityClass;
-        this.ownerIdAttributeName = original.ownerIdAttributeName;
+        this.ownerIdAttributeNames = original.ownerIdAttributeNames;
         this.flushStrategy = original.flushStrategy;
         this.entityAttributeMapper = original.entityAttributeMapper;
         this.viewAttributeAccessor = original.viewAttributeAccessor;

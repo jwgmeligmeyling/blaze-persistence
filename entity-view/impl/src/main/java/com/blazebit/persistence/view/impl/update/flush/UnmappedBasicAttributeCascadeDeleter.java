@@ -28,8 +28,8 @@ import com.blazebit.persistence.view.impl.update.UpdateContext;
 import javax.persistence.Query;
 import javax.persistence.Tuple;
 import javax.persistence.metamodel.EntityType;
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.Field;
+import java.util.*;
 
 
 /**
@@ -39,7 +39,7 @@ import java.util.List;
  */
 public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttributeCascadeDeleter {
 
-    private final String ownerIdAttributeName;
+    private final List<String> ownerIdAttributeNames;
     private final String deleteQuery;
     private final String deleteByOwnerIdQuery;
     private final boolean requiresDeleteCascadeAfterRemove;
@@ -47,15 +47,21 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
     private final UnmappedAttributeCascadeDeleter[] unmappedPreRemoveCascadeDeleters;
     private final UnmappedAttributeCascadeDeleter[] unmappedPostRemoveCascadeDeleters;
 
-    public UnmappedBasicAttributeCascadeDeleter(EntityViewManagerImpl evm, String attributeName, ExtendedAttribute<?, ?> attribute, String ownerIdAttributeName, boolean disallowCycle) {
+    public UnmappedBasicAttributeCascadeDeleter(EntityViewManagerImpl evm, String attributeName, ExtendedAttribute<?, ?> attribute, List<String> ownerIdAttributeNames, boolean disallowCycle) {
         super(evm, attributeName, attribute);
         EntityMetamodel entityMetamodel = evm.getMetamodel().getEntityMetamodel();
         ExtendedManagedType extendedManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, elementEntityClass);
         EntityType<?> entityType = (EntityType<?>) extendedManagedType.getType();
         this.requiresDeleteCascadeAfterRemove = !attribute.isForeignJoinColumn();
-        this.ownerIdAttributeName = ownerIdAttributeName;
+        this.ownerIdAttributeNames = ownerIdAttributeNames;
         this.deleteQuery = "DELETE FROM " + entityType.getName() + " e WHERE e." + elementIdAttributeName + " = :id";
-        this.deleteByOwnerIdQuery = "DELETE FROM " + entityType.getName() + " e WHERE e." + ownerIdAttributeName + " = :ownerId";
+        StringBuilder deleteByOwnerIdQueryBuilder = new StringBuilder("DELETE FROM " + entityType.getName());
+        int i = 1;
+        for(String ownerIdAttributeName : ownerIdAttributeNames){
+            //TODO does this work like this?
+            deleteByOwnerIdQueryBuilder.append(" e WHERE e." + ownerIdAttributeName + " = :ownerIdName_" + (i++));
+        }
+        deleteByOwnerIdQuery = deleteByOwnerIdQueryBuilder.toString();
 
         if (elementIdAttributeName == null) {
             this.requiresDeleteAsEntity = false;
@@ -103,7 +109,9 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
         Object id = null;
         if (requiresDeleteAsEntity) {
             CriteriaBuilder<?> cb = context.getEntityViewManager().getCriteriaBuilderFactory().create(context.getEntityManager(), elementEntityClass);
-            cb.where(ownerIdAttributeName).eq(ownerId);
+            for(String ownerIdAttributeName : ownerIdAttributeNames){
+                cb.where(ownerIdAttributeName).eq(ownerIdsdfasefa);
+            }
             context.getEntityManager().remove(cb.getSingleResult());
             // We need to flush here, otherwise the deletion will be deferred and might cause a constraint violation
             context.getEntityManager().flush();
@@ -135,6 +143,10 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
 
     private void removeWithoutPreCascadeDelete(UpdateContext context, Object ownerId, Object[] returnedValues, Object id) {
         boolean doDelete = true;
+        Set<String> ownerIdNames = new HashSet<>();
+        for (Field field : Arrays.asList(ownerId.getClass().getFields())){
+            ownerIdNames.add(field.getName());
+        }
         // need to "return" the values from the delete query for the post deleters since the values aren't available after executing the delete query
         if (unmappedPostRemoveCascadeDeleters.length != 0 && returnedValues == null) {
             List<String> returningAttributes = new ArrayList<>();
@@ -147,6 +159,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
             if (evm.getDbmsDialect().supportsReturningColumns()) {
                 DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().delete(context.getEntityManager(), elementEntityClass);
                 if (id == null) {
+                    for()
                     cb.where(ownerIdAttributeName).eq(ownerId);
                 } else {
                     cb.where(elementIdAttributeName).eq(id);
@@ -182,7 +195,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
             } else {
                 if (id == null) {
                     Query query = context.getEntityManager().createQuery(deleteByOwnerIdQuery);
-                    query.setParameter("ownerId", ownerId);
+                    query.setParameter("ownerIds", ownerIdNames);
                     query.executeUpdate();
                 } else {
                     Query query = context.getEntityManager().createQuery(deleteQuery);

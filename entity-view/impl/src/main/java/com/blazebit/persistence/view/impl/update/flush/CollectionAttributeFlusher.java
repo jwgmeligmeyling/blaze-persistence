@@ -40,14 +40,8 @@ import com.blazebit.persistence.view.spi.type.EntityViewProxy;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.Tuple;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  *
@@ -62,9 +56,9 @@ public class CollectionAttributeFlusher<E, V extends Collection<?>> extends Abst
     private final InverseCollectionElementAttributeFlusher.Strategy inverseRemoveStrategy;
 
     @SuppressWarnings("unchecked")
-    public CollectionAttributeFlusher(String attributeName, String mapping, Class<?> ownerEntityClass, String ownerIdAttributeName, FlushStrategy flushStrategy, AttributeAccessor entityAttributeAccessor, InitialValueAttributeAccessor viewAttributeAccessor, boolean optimisticLockProtected, boolean collectionUpdatable,
+    public CollectionAttributeFlusher(String attributeName, String mapping, Class<?> ownerEntityClass, Set<String> ownerIdAttributeNames, FlushStrategy flushStrategy, AttributeAccessor entityAttributeAccessor, InitialValueAttributeAccessor viewAttributeAccessor, boolean optimisticLockProtected, boolean collectionUpdatable,
                                       boolean viewOnlyDeleteCascaded, boolean jpaProviderDeletesCollection, CollectionRemoveListener cascadeDeleteListener, CollectionRemoveListener removeListener, CollectionInstantiator collectionInstantiator, TypeDescriptor elementDescriptor, InverseFlusher<E> inverseFlusher, InverseRemoveStrategy inverseRemoveStrategy) {
-        super(attributeName, mapping, collectionUpdatable || elementDescriptor.shouldFlushMutations(), ownerEntityClass, ownerIdAttributeName, flushStrategy, entityAttributeAccessor, viewAttributeAccessor, optimisticLockProtected, collectionUpdatable, viewOnlyDeleteCascaded, jpaProviderDeletesCollection, cascadeDeleteListener, removeListener, elementDescriptor);
+        super(attributeName, mapping, collectionUpdatable || elementDescriptor.shouldFlushMutations(), ownerEntityClass, ownerIdAttributeNames, flushStrategy, entityAttributeAccessor, viewAttributeAccessor, optimisticLockProtected, collectionUpdatable, viewOnlyDeleteCascaded, jpaProviderDeletesCollection, cascadeDeleteListener, removeListener, elementDescriptor);
         this.collectionInstantiator = collectionInstantiator;
         this.inverseFlusher = inverseFlusher;
         this.inverseRemoveStrategy = InverseCollectionElementAttributeFlusher.Strategy.of(inverseRemoveStrategy);
@@ -516,17 +510,21 @@ public class CollectionAttributeFlusher<E, V extends Collection<?>> extends Abst
     }
 
     private List<PostFlushDeleter> removeByOwnerId(UpdateContext context, Object ownerId, boolean cascade) {
+        Set<String> ownerIdNames = new HashSet<>();
+        for (Field field : Arrays.asList(ownerId.getClass().getFields())){
+            ownerIdNames.add(field.getName());
+        }
         EntityViewManagerImpl evm = context.getEntityViewManager();
         if (cascade) {
             List<Object> elementIds;
             if (inverseFlusher == null) {
                 // If there is no inverseFlusher/mapped by attribute, the collection has a join table
                 if (evm.getDbmsDialect().supportsReturningColumns()) {
-                    List<Tuple> tuples = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName)
-                            .where(ownerIdAttributeName).eq(ownerId)
-                            .executeWithReturning(attributeName + "." + elementDescriptor.getEntityIdAttributeName())
-                            .getResultList();
-
+                    DeleteCriteriaBuilder<?> deleteCriteriaBuilder = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
+                    for(String ownerIdAttributeName : ownerIdAttributeNames) {
+                        deleteCriteriaBuilder.where(ownerIdAttributeName).in(ownerIdNames);
+                    }
+                    List<Tuple> tuples = deleteCriteriaBuilder.executeWithReturning(attributeName + "." + elementDescriptor.getEntityIdAttributeName()).getResultList();
                     elementIds = new ArrayList<>(tuples.size());
                     for (Tuple tuple : tuples) {
                         elementIds.add(tuple.get(0));
