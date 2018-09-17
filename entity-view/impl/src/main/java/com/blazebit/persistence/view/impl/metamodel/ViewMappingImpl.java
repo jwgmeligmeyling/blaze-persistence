@@ -223,8 +223,22 @@ public class ViewMappingImpl implements ViewMapping {
     }
 
     @Override
+    public Set<MethodAttributeMapping> getIdAttributes() {
+        return idAttributes;
+    }
+
+    @Override
     public void setIdAttribute(EntityViewAttributeMapping idAttribute) {
         setIdAttributeMapping((MethodAttributeMapping) idAttribute);
+    }
+
+    @Override
+    public void setIdAttributes(Set<EntityViewAttributeMapping> idAttributes) {
+        Set<MethodAttributeMapping> idAttributes1 = new HashSet<>();
+        for(EntityViewAttributeMapping idAttribute : idAttributes){
+            idAttributes1.add((MethodAttributeMapping) idAttribute);
+        }
+        setIdAttributeMappings(idAttributes1);
     }
 
     @Override

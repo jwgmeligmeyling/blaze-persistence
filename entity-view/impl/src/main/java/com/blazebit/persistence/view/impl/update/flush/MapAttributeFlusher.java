@@ -554,8 +554,10 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
                 CriteriaBuilder<?> criteriaBuilder = evm.getCriteriaBuilderFactory().create(context.getEntityManager(), ownerEntityClass, "e");
                 for(String ownerIdAttributeName : ownerIdAttributeNames){
                      criteriaBuilder
-                             .where(ownerIdAttributeName).in(ownerIdNames)
-                             .select("e." + attributeName + "." + elementDescriptor.getEntityIdAttributeName());
+                             .where(ownerIdAttributeName).in(ownerIdNames);
+                }
+                for (String elementDescriptorIdAttributeName : elementDescriptor.getEntityIdAttributeNames()){
+                    criteriaBuilder.select("e." + attributeName + "." + elementDescriptorIdAttributeName);
                 }
 
                 elementIds = (List<Object>) criteriaBuilder.getResultList();

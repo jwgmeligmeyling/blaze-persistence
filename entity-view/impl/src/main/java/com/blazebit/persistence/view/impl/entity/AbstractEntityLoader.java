@@ -24,7 +24,10 @@ import com.blazebit.persistence.view.metamodel.ManagedViewType;
 import com.blazebit.persistence.view.metamodel.ViewType;
 
 import javax.persistence.EntityManager;
+import javax.persistence.metamodel.SingularAttribute;
 import java.lang.reflect.Constructor;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -35,26 +38,37 @@ public abstract class AbstractEntityLoader implements EntityLoader {
     protected final Class<?> entityClass;
     protected final ViewToEntityMapper viewIdMapper;
     protected final Constructor<Object> entityConstructor;
-    protected final String idAttributeName;
+    protected final Set<String> idAttributeNames;
     protected final AttributeAccessor entityIdAccessor;
 
-    public AbstractEntityLoader(Class<?> entityClass, javax.persistence.metamodel.SingularAttribute<?, ?> jpaIdAttribute, ViewToEntityMapper viewIdMapper, AttributeAccessor entityIdAccessor) {
+    public AbstractEntityLoader(Class<?> entityClass, Set<SingularAttribute<?, ?>> jpaIdAttributes, ViewToEntityMapper viewIdMapper, AttributeAccessor entityIdAccessor) {
         this.entityClass = entityClass;
         this.viewIdMapper = viewIdMapper;
         try {
             Constructor<Object> constructor = (Constructor<Object>) entityClass.getDeclaredConstructor();
             constructor.setAccessible(true);
             this.entityConstructor = constructor;
-            if (jpaIdAttribute != null) {
-                this.idAttributeName = jpaIdAttribute.getName();
+            if (jpaIdAttributes != null) {
+                Set<String> jpaIdAttributeNames = new HashSet<>();
+                for(SingularAttribute jpaIdAttribute : jpaIdAttributes){
+                    jpaIdAttributeNames.add(jpaIdAttribute.getName());
+                }
+                this.idAttributeNames = jpaIdAttributeNames;
                 this.entityIdAccessor = entityIdAccessor;
             } else {
-                this.idAttributeName = null;
+                this.idAttributeNames = null;
                 this.entityIdAccessor = null;
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Couldn't find required no-arg constructor for entity class: " + entityClass.getName(), e);
         }
+    }
+
+    protected static Set<javax.persistence.metamodel.SingularAttribute<?,?>> jpaIdsOf(EntityViewManagerImpl evm, ManagedViewType<?> subviewType) {
+        if (subviewType instanceof ViewType<?>) {
+            return JpaMetamodelUtils.getIdAttributes(evm.getMetamodel().getEntityMetamodel().entity(subviewType.getEntityClass()));
+        }
+        return null;
     }
 
     protected static javax.persistence.metamodel.SingularAttribute jpaIdOf(EntityViewManagerImpl evm, ManagedViewType<?> subviewType) {

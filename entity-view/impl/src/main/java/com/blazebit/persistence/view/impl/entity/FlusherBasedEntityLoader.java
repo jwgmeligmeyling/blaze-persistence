@@ -22,7 +22,10 @@ import com.blazebit.persistence.view.impl.update.flush.DirtyAttributeFlusher;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
-import java.util.List;
+import javax.persistence.Query;
+import javax.persistence.metamodel.SingularAttribute;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  *
@@ -34,8 +37,8 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
     private final DirtyAttributeFlusher<?, Object, Object>[] flushers;
     private volatile String queryString;
 
-    public FlusherBasedEntityLoader(Class<?> entityClass, javax.persistence.metamodel.SingularAttribute<?, ?> jpaIdAttribute, ViewToEntityMapper viewIdMapper, AttributeAccessor entityIdAccessor, DirtyAttributeFlusher<?, Object, Object>[] flushers) {
-        super(entityClass, jpaIdAttribute, viewIdMapper, entityIdAccessor);
+    public FlusherBasedEntityLoader(Class<?> entityClass, Set<SingularAttribute<?, ?>> jpaIdAttributes, ViewToEntityMapper viewIdMapper, AttributeAccessor entityIdAccessor, DirtyAttributeFlusher<?, Object, Object>[] flushers) {
+        super(entityClass, jpaIdAttributes, viewIdMapper, entityIdAccessor);
         this.flushers = flushers;
         // TODO: optimize by copying more from existing loaders and avoid object allocations
         // TODO: consider constructing query eagerly,
@@ -55,8 +58,10 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
                 flushers[i].appendFetchJoinQueryFragment("e", sb);
             }
         }
-        sb.append(" WHERE e.").append(idAttributeName).append(" = :id");
-
+        for (String idAttributeName : idAttributeNames){
+            sb.append(" WHERE e.").append(idAttributeName).append(" = :"+idAttributeName+"_variable"+" AND");
+        }
+        sb.setLength(sb.length() - " AND".length());
         query = sb.toString();
         queryString = query;
         return query;
@@ -74,11 +79,25 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
     @Override
     protected Object queryEntity(EntityManager em, Object id) {
         @SuppressWarnings("unchecked")
-        List<Object> list = em.createQuery(getQueryString())
-                .setParameter("id", id)
-                .getResultList();
-        if (list.isEmpty()) {
-            throw new EntityNotFoundException("Required entity '" + entityClass.getName() + "' with id '" + id + "' couldn't be found!");
+        Map<String, Object> ownerIds = new HashMap<>();
+        for (Field field : Arrays.asList(id.getClass().getFields())){
+            try {
+                ownerIds.put(field.getName(),field.get(id));
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+            }
+
+        }
+        Query query = em.createQuery(getQueryString());
+        for(String idAttributeName : idAttributeNames){
+            query.setParameter(idAttributeName+"_variable",ownerIds.get(idAttributeName));
+        }
+        //TODO: check whether the result list is actually of the form assumed in the test below.
+        List<Object> list = query.getResultList();
+        for(Map.Entry<String,Object> entry : ownerIds.entrySet()){
+            if (!list.contains(entry.getValue())) {
+                throw new EntityNotFoundException("Required entity '" + entityClass.getName() + "' with id '" + entry.getKey() + "' couldn't be found!");
+            }
         }
 
         return list.get(0);

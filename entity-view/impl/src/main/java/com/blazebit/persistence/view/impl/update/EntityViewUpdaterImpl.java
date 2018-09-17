@@ -725,7 +725,8 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
             CollectionRemoveListener elementCascadeDeleteListener = createCascadeDeleteListener(attribute, elementDescriptor);
             boolean jpaProviderDeletesCollection;
 
-            if (elementDescriptor.getEntityIdAttributeName() != null) {
+            //TODO: figure out if we should also check for !... .isEmpty()
+            if (elementDescriptor.getEntityIdAttributeNames() != null) {
                 jpaProviderDeletesCollection = evm.getJpaProvider().supportsJoinTableCleanupOnDelete();
             } else {
                 jpaProviderDeletesCollection = evm.getJpaProvider().supportsCollectionTableCleanupOnDelete();
@@ -779,7 +780,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                                 attributeName,
                                 attributeMapping,
                                 entityClass,
-                                idAttributeName,
+                                idAttributeNames,
                                 flushStrategy,
                                 entityAttributeAccessor,
                                 viewAttributeAccessor,
@@ -799,7 +800,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                                 attributeName,
                                 attributeMapping,
                                 entityClass,
-                                idAttributeName,
+                                idAttributeNames,
                                 flushStrategy,
                                 entityAttributeAccessor,
                                 viewAttributeAccessor,
@@ -975,12 +976,18 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                 UnmappedBasicAttributeCascadeDeleter deleter;
 
                 if (elementDescriptor.isJpaEntity() && cascadeDelete) {
-                    String elementIdAttributeName = entityMetamodel.getManagedType(ExtendedManagedType.class, attributeType.getJavaType()).getIdAttribute().getName();
+                    Set<SingularAttribute> elementIdAttributes = entityMetamodel.getManagedType(ExtendedManagedType.class, attributeType.getJavaType()).getIdAttributes();
+                    Set<String> elementIdAttributeNamesAndMapping = new HashSet<>();
+                    for(SingularAttribute elementIdAttribute : elementIdAttributes){
+                        elementIdAttributeNamesAndMapping.add(attributeMapping + "." + elementIdAttribute.getName());
+                    }
+                    Set<String> elementIdAttributeMappings = new HashSet<>();
                     deleter = new UnmappedBasicAttributeCascadeDeleter(
                             evm,
                             attributeName,
                             entityMetamodel.getManagedType(ExtendedManagedType.class, entityClass).getAttribute(attributeMapping),
-                            attributeMapping + "." + elementIdAttributeName,
+                            //TODO: check if the assumed syntax of attribute name and mapping is correct. 
+                            elementIdAttributeNamesAndMapping,
                             false
                     );
                 } else {

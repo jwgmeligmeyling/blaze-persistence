@@ -23,6 +23,7 @@ import com.blazebit.persistence.view.LockMode;
 import javax.persistence.EntityManager;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A mapping for an entity view type.
@@ -193,6 +194,14 @@ public interface EntityViewMapping {
      * @param idAttribute The id attribute mapping
      */
     public void setIdAttribute(EntityViewAttributeMapping idAttribute);
+
+    /**
+     * Set the id attribute mapping of this entity view mapping.
+     * Note that the attribute must be one of the attributes as given by {@link #getAttributes()} or <code>null</code>.
+     *
+     * @param idAttributes The id attribute mapping
+     */
+    public void setIdAttributes(Set<EntityViewAttributeMapping> idAttributes);
 
     /**
      * Returns the version attribute mapping of this entity view mapping or <code>null</code> if ther is none.

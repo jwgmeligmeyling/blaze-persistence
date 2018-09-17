@@ -20,6 +20,11 @@ import com.blazebit.persistence.parser.EntityMetamodel;
 import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.ExtendedManagedType;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
+import com.blazebit.persistence.view.metamodel.SingularAttribute;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -31,8 +36,9 @@ public abstract class AbstractUnmappedAttributeCascadeDeleter implements Unmappe
 
     protected static final UnmappedAttributeCascadeDeleter[] EMPTY = new UnmappedAttributeCascadeDeleter[0];
     protected final Class<?> elementEntityClass;
-    protected final String elementIdAttributeName;
+    protected final Set<String> elementIdAttributeNames;
     protected final String attributeName;
+    protected final Set<String> attributeValuePaths;
     protected final String attributeValuePath;
     protected final boolean cascadeDeleteElement;
 
@@ -41,28 +47,39 @@ public abstract class AbstractUnmappedAttributeCascadeDeleter implements Unmappe
         this.elementEntityClass = attribute.getElementClass();
         this.attributeName = attributeName;
         if (entityMetamodel.getEntity(elementEntityClass) == null) {
-            this.elementIdAttributeName = null;
+            this.elementIdAttributeNames = null;
+            this.attributeValuePaths = Collections.singleton(attributeName);
             this.attributeValuePath = attributeName;
             this.cascadeDeleteElement = false;
         } else {
             ExtendedManagedType extendedManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, elementEntityClass);
-            this.elementIdAttributeName = extendedManagedType.getIdAttribute().getName();
-            this.attributeValuePath = attributeName + "." + elementIdAttributeName;
+            Set<String> elementIdAttributeNames1 = new HashSet<>();
+            Set<String> attributeValuePaths1 = new HashSet<>();
+            for(SingularAttribute idAttribute : (Set<SingularAttribute>) extendedManagedType.getIdAttributes()){
+                elementIdAttributeNames1.add((idAttribute.getName()));
+                attributeValuePaths1.add((attributeName + "." + (SingularAttribute<?,?>)idAttribute).getName());
+            }
+            this.elementIdAttributeNames = elementIdAttributeNames1;
+            this.attributeValuePaths = attributeValuePaths1;
+            this.attributeValuePath = attributeName + "." + extendedManagedType.getIdAttribute().getName();
             this.cascadeDeleteElement = attribute.isDeleteCascaded();
         }
     }
 
     protected AbstractUnmappedAttributeCascadeDeleter(AbstractUnmappedAttributeCascadeDeleter original) {
         this.elementEntityClass = original.elementEntityClass;
-        this.elementIdAttributeName = original.elementIdAttributeName;
+        this.elementIdAttributeNames = original.elementIdAttributeNames;
         this.attributeName = original.attributeName;
-        this.attributeValuePath = original.attributeValuePath;
+        this.attributeValuePaths = original.attributeValuePaths;
         this.cascadeDeleteElement = original.cascadeDeleteElement;
     }
 
     @Override
     public String getAttributeValuePath() {
         return attributeValuePath;
+    }
 
+    public Set<String> getAttributeValuePaths() {
+        return attributeValuePaths;
     }
 }

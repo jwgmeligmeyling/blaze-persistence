@@ -93,7 +93,7 @@ public class TypeDescriptor {
         boolean cascadeUpdate = attribute.isUpdateCascaded();
         Set<Type<?>> persistAllowedSubtypes = attribute.getPersistCascadeAllowedSubtypes();
         Set<Type<?>> updateAllowedSubtypes = attribute.getUpdateCascadeAllowedSubtypes();
-        List<EntityToEntityMapper> entityToEntityMappers = Collections.EMPTY_LIST;
+        EntityToEntityMapper entityToEntityMapper = null;
         ViewToEntityMapper viewToEntityMapper = null;
         ViewToEntityMapper loadOnlyViewToEntityMapper = null;
 
@@ -113,7 +113,7 @@ public class TypeDescriptor {
             identifiable = jpaEntity || !jpaManaged;
             if (jpaEntity) {
                 Map<String, Map<?, ?>> fetchGraph = null;
-                List<UnmappedAttributeCascadeDeleter> deleters = Collections.emptyList();
+                UnmappedAttributeCascadeDeleter deleter = null;
 
                 // We only need to know the fetch graph when we actually do updates
                 if (cascadeUpdate) {
@@ -129,28 +129,27 @@ public class TypeDescriptor {
                 // Only construct when orphanRemoval or delete cascading is enabled, orphanRemoval implies delete cascading
                 if (attribute.isDeleteCascaded()) {
                     String mapping = attribute.getMapping();
-                    ExtendedManagedType elementManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, attribute.getDeclaringType().getEntityClass());
+                    Set<String> entityIdAttributeNamesAndMapping = new HashSet<>();
                     for(String entityIdAttributeName : entityIdAttributeNames){
-                        deleters.add(new UnmappedBasicAttributeCascadeDeleter(
-                                evm,
-                                mapping,
-                                elementManagedType.getAttribute(mapping),
-                                mapping + "." + entityIdAttributeName,
-                                false
-                        ));
+                        entityIdAttributeNamesAndMapping.add(mapping + "." + entityIdAttributeName);
                     }
+                    ExtendedManagedType elementManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, attribute.getDeclaringType().getEntityClass());
+                    deleter = new UnmappedBasicAttributeCascadeDeleter(
+                            evm,
+                            mapping,
+                            elementManagedType.getAttribute(mapping),
+                            entityIdAttributeNamesAndMapping,
+                            false
+                        );
                 }
-
-                for(UnmappedAttributeCascadeDeleter deleter : deleters){
-                    entityToEntityMappers.add(new DefaultEntityToEntityMapper(
+                 entityToEntityMapper = new DefaultEntityToEntityMapper(
                         cascadePersist,
                         cascadeUpdate,
                         basicUserType,
                         new DefaultEntityLoaderFetchGraphNode(
                             evm, attribute.getName(), (EntityType<?>) managedType, fetchGraph
                         ),
-                        deleter));
-                }
+                        deleter);
             }
         } else {
             ManagedViewType<?> elementType = (ManagedViewType<?>) type;

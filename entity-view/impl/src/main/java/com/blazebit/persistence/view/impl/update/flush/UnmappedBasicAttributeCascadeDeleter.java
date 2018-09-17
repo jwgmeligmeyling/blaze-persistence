@@ -24,6 +24,7 @@ import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.ExtendedManagedType;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
+import com.blazebit.reflection.ReflectionUtils;
 
 import javax.persistence.Query;
 import javax.persistence.Tuple;
@@ -39,7 +40,7 @@ import java.util.*;
  */
 public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttributeCascadeDeleter {
 
-    private final List<String> ownerIdAttributeNames;
+    private final Set<String> ownerIdAttributeNames;
     private final String deleteQuery;
     private final String deleteByOwnerIdQuery;
     private final boolean requiresDeleteCascadeAfterRemove;
@@ -47,23 +48,31 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
     private final UnmappedAttributeCascadeDeleter[] unmappedPreRemoveCascadeDeleters;
     private final UnmappedAttributeCascadeDeleter[] unmappedPostRemoveCascadeDeleters;
 
-    public UnmappedBasicAttributeCascadeDeleter(EntityViewManagerImpl evm, String attributeName, ExtendedAttribute<?, ?> attribute, List<String> ownerIdAttributeNames, boolean disallowCycle) {
+    //NOTE: if I understand this correctly then here we put in a single attribute to delete. This element can be a key (then the deleteQuery is used), or not (then the ownerQuery is used).
+    //TODO create support for the single attribute to be removed to also be a composite key; as of now we use getIdAttribute, assuming that indeed it has only one idAttribute.
+    public UnmappedBasicAttributeCascadeDeleter(EntityViewManagerImpl evm, String attributeName, ExtendedAttribute<?, ?> attribute, Set<String> ownerIdAttributeNames, boolean disallowCycle) {
         super(evm, attributeName, attribute);
         EntityMetamodel entityMetamodel = evm.getMetamodel().getEntityMetamodel();
         ExtendedManagedType extendedManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, elementEntityClass);
         EntityType<?> entityType = (EntityType<?>) extendedManagedType.getType();
         this.requiresDeleteCascadeAfterRemove = !attribute.isForeignJoinColumn();
         this.ownerIdAttributeNames = ownerIdAttributeNames;
-        this.deleteQuery = "DELETE FROM " + entityType.getName() + " e WHERE e." + elementIdAttributeName + " = :id";
+        StringBuilder deleteByIdQuery = new StringBuilder("DELETE FROM " + entityType.getName() );
+        for(String elementIdAttributeName : elementIdAttributeNames){
+            deleteByIdQuery.append(" e WHERE e." + elementIdAttributeName +" = :"+elementIdAttributeName+"_variable"+" AND");
+        }
+        deleteByIdQuery.setLength(deleteByIdQuery.length() - " AND".length());
+        deleteQuery = deleteByIdQuery.toString();
+
         StringBuilder deleteByOwnerIdQueryBuilder = new StringBuilder("DELETE FROM " + entityType.getName());
         int i = 1;
         for(String ownerIdAttributeName : ownerIdAttributeNames){
-            //TODO does this work like this?
-            deleteByOwnerIdQueryBuilder.append(" e WHERE e." + ownerIdAttributeName + " = :ownerIdName_" + (i++));
+            deleteByOwnerIdQueryBuilder.append(" e WHERE e." + ownerIdAttributeName + " = :" + ownerIdAttributeName + "_variable"+" AND");
         }
+        deleteByOwnerIdQueryBuilder.setLength(deleteByOwnerIdQueryBuilder.length() - " AND".length());
         deleteByOwnerIdQuery = deleteByOwnerIdQueryBuilder.toString();
 
-        if (elementIdAttributeName == null) {
+        if (elementIdAttributeNames == null || elementIdAttributeNames.isEmpty()) {
             this.requiresDeleteAsEntity = false;
             this.unmappedPreRemoveCascadeDeleters = this.unmappedPostRemoveCascadeDeleters = EMPTY;
         } else {
@@ -72,7 +81,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
                 this.requiresDeleteAsEntity = true;
                 this.unmappedPreRemoveCascadeDeleters = this.unmappedPostRemoveCascadeDeleters = EMPTY;
             } else {
-                List<UnmappedAttributeCascadeDeleter> unmappedCascadeDeleters = UnmappedAttributeCascadeDeleterUtil.createUnmappedCascadeDeleters(evm, elementEntityClass, elementIdAttributeName);
+                List<UnmappedAttributeCascadeDeleter> unmappedCascadeDeleters = UnmappedAttributeCascadeDeleterUtil.createUnmappedCascadeDeleters(evm, elementEntityClass, elementIdAttributeNames);
                 List<UnmappedAttributeCascadeDeleter> unmappedPreRemoveCascadeDeleters = new ArrayList<>(unmappedCascadeDeleters.size());
                 List<UnmappedAttributeCascadeDeleter> unmappedPostRemoveCascadeDeleters = new ArrayList<>(unmappedCascadeDeleters.size());
                 for (UnmappedAttributeCascadeDeleter deleter : unmappedCascadeDeleters) {
@@ -107,10 +116,19 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
     public void removeByOwnerId(UpdateContext context, Object ownerId) {
         Object[] returnedValues = null;
         Object id = null;
+        Map<String, Object> ownerIds = new HashMap<>();
+        for (Field field : Arrays.asList(id.getClass().getFields())){
+            try {
+                ownerIds.put(field.getName(),field.get(id));
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+            }
+        }
         if (requiresDeleteAsEntity) {
             CriteriaBuilder<?> cb = context.getEntityViewManager().getCriteriaBuilderFactory().create(context.getEntityManager(), elementEntityClass);
+            //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
             for(String ownerIdAttributeName : ownerIdAttributeNames){
-                cb.where(ownerIdAttributeName).eq(ownerIdsdfasefa);
+                cb.where(ownerIdAttributeName).in(ownerIds.keySet());
             }
             context.getEntityManager().remove(cb.getSingleResult());
             // We need to flush here, otherwise the deletion will be deferred and might cause a constraint violation
@@ -125,11 +143,15 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
 
                 CriteriaBuilder<Object[]> cb = context.getEntityViewManager().getCriteriaBuilderFactory().create(context.getEntityManager(), Object[].class);
                 cb.from(elementEntityClass);
-                cb.where(ownerIdAttributeName).eq(ownerId);
-                for (String attribute : returningAttributes) {
+                //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
+                for(String ownerIdAttributeName : ownerIdAttributeNames){
+                    cb.where(ownerIdAttributeName).in(ownerIds.keySet());
+                }                for (String attribute : returningAttributes) {
                     cb.select(attribute);
                 }
-                cb.select(elementIdAttributeName);
+                for(String elementIdAttributeName : elementIdAttributeNames){
+                    cb.select(elementIdAttributeName);
+                }
                 returnedValues = cb.getSingleResult();
                 id = returnedValues[returnedValues.length - 1];
 
@@ -143,9 +165,21 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
 
     private void removeWithoutPreCascadeDelete(UpdateContext context, Object ownerId, Object[] returnedValues, Object id) {
         boolean doDelete = true;
-        Set<String> ownerIdNames = new HashSet<>();
+        Map<String, Object> ownerIds = new HashMap<>();
         for (Field field : Arrays.asList(ownerId.getClass().getFields())){
-            ownerIdNames.add(field.getName());
+            try {
+                ownerIds.put(field.getName(),field.get(ownerId));
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Cannot access owner id class property: " + e.getMessage(), e);
+            }
+        }
+        Map<String, Object> ids = new HashMap<>();
+        for (Field field : Arrays.asList(id.getClass().getFields())){
+            try {
+                ownerIds.put(field.getName(),field.get(id));
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+            }
         }
         // need to "return" the values from the delete query for the post deleters since the values aren't available after executing the delete query
         if (unmappedPostRemoveCascadeDeleters.length != 0 && returnedValues == null) {
@@ -158,11 +192,16 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
             // If the dbms supports it, we use the returning feature to do this
             if (evm.getDbmsDialect().supportsReturningColumns()) {
                 DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().delete(context.getEntityManager(), elementEntityClass);
+                //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
                 if (id == null) {
-                    for()
-                    cb.where(ownerIdAttributeName).eq(ownerId);
+                    for(String ownerIdAttributeName : ownerIdAttributeNames){
+                        cb.where(ownerIdAttributeName).in(ownerIds.keySet());
+                    }
+                    //TODO: I believe here we assume that the attribute to be considered only consists of one id; but maybe this will go through fine if id is a composite id as well. Edit: it does not.
                 } else {
-                    cb.where(elementIdAttributeName).eq(id);
+                    for(String elementIdAttributeName : elementIdAttributeNames){
+                        cb.where(elementIdAttributeName).in(ids.keySet());
+                    }
                 }
 
                 ReturningResult<Tuple> result = cb.executeWithReturning(returningAttributes.toArray(new String[returningAttributes.size()]));
@@ -173,14 +212,20 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
                 CriteriaBuilder<Object[]> cb = evm.getCriteriaBuilderFactory().create(context.getEntityManager(), Object[].class);
                 cb.from(elementEntityClass);
                 if (id == null) {
-                    cb.where(ownerIdAttributeName).eq(ownerId);
+                    for(String ownerIdAttributeName : ownerIdAttributeNames){
+                        cb.where(ownerIdAttributeName).in(ownerIds.keySet());
+                    }
                 } else {
-                    cb.where(elementIdAttributeName).eq(id);
+                    for(String elementIdAttributeName : elementIdAttributeNames){
+                        cb.where(elementIdAttributeName).in(ids.keySet());
+                    }
                 }
                 for (String attribute : returningAttributes) {
                     cb.select(attribute);
                 }
-                cb.select(elementIdAttributeName);
+                for(String elementIdAttributeName : elementIdAttributeNames){
+                    cb.select(elementIdAttributeName);
+                }
                 returnedValues = cb.getSingleResult();
                 id = returnedValues[returnedValues.length - 1];
             }
@@ -195,11 +240,14 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
             } else {
                 if (id == null) {
                     Query query = context.getEntityManager().createQuery(deleteByOwnerIdQuery);
-                    query.setParameter("ownerIds", ownerIdNames);
+                    for (String ownerIdAttributeName : ownerIdAttributeNames)
+                    query.setParameter(ownerIdAttributeName+"_variable",ownerIds.get(ownerIdAttributeName));
                     query.executeUpdate();
                 } else {
                     Query query = context.getEntityManager().createQuery(deleteQuery);
-                    query.setParameter("id", id);
+                    for (String elementIdAttributeName : elementIdAttributeNames){
+                        query.setParameter(elementIdAttributeName + "_variable",ids.get(elementIdAttributeName));
+                    }
                     query.executeUpdate();
                 }
             }

@@ -308,6 +308,17 @@ public class ConvertedViewMapping implements ViewMapping {
         delegate.setIdAttribute(idAttribute);
     }
 
+
+    @Override
+    public Set<MethodAttributeMapping> getIdAttributes() {
+        return delegate.getIdAttributes();
+    }
+
+    @Override
+    public void setIdAttributes(Set<EntityViewAttributeMapping> idAttributes) {
+        delegate.setIdAttributes(idAttributes);
+    }
+
     @Override
     public MethodAttributeMapping getVersionAttribute() {
         return delegate.getVersionAttribute();

@@ -16,6 +16,8 @@
 
 package com.blazebit.persistence.view.impl.update.flush;
 
+import com.blazebit.persistence.CriteriaBuilder;
+import com.blazebit.persistence.CriteriaBuilderFactory;
 import com.blazebit.persistence.DeleteCriteriaBuilder;
 import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.JpaProvider;
@@ -23,8 +25,8 @@ import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
 
 import javax.persistence.Tuple;
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  *
@@ -34,29 +36,31 @@ import java.util.List;
 public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedAttributeCascadeDeleter {
 
     private final Class<?> ownerEntityClass;
-    private final String ownerIdAttributeName;
+    private final Set<String> ownerIdAttributeNames;
     private final String mappedByAttributeName;
     private final boolean jpaProviderDeletesCollection;
     private final UnmappedBasicAttributeCascadeDeleter elementDeleter;
 
-    public UnmappedCollectionAttributeCascadeDeleter(EntityViewManagerImpl evm, String attributeName, ExtendedAttribute<?, ?> attribute, Class<?> ownerEntityClass, String ownerIdAttributeName, boolean disallowCycle) {
+    public UnmappedCollectionAttributeCascadeDeleter(EntityViewManagerImpl evm, String attributeName, ExtendedAttribute<?, ?> attribute, Class<?> ownerEntityClass, Set<String> ownerIdAttributeNames, boolean disallowCycle) {
         super(evm, attributeName, attribute);
         this.ownerEntityClass = ownerEntityClass;
-        this.ownerIdAttributeName = ownerIdAttributeName;
+        this.ownerIdAttributeNames = ownerIdAttributeNames;
         this.mappedByAttributeName = attribute.getMappedBy();
         JpaProvider jpaProvider = evm.getJpaProvider();
         if (elementIdAttributeName != null) {
             this.jpaProviderDeletesCollection = jpaProvider.supportsJoinTableCleanupOnDelete();
             if (cascadeDeleteElement) {
-                String elementOwnerIdAttributeName = null;
+                Set<String> elementOwnerIdAttributeNames = new HashSet<>();
                 if (mappedByAttributeName != null) {
-                    elementOwnerIdAttributeName = mappedByAttributeName + "." + ownerIdAttributeName;
+                    for(String ownerIdAttributeName : ownerIdAttributeNames){
+                        elementOwnerIdAttributeNames.add(mappedByAttributeName + "." + ownerIdAttributeName);
+                    }
                 }
                 this.elementDeleter = new UnmappedBasicAttributeCascadeDeleter(
                         evm,
                         "",
                         attribute,
-                        elementOwnerIdAttributeName,
+                        elementOwnerIdAttributeNames,
                         disallowCycle
                 );
             } else {
@@ -71,7 +75,7 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
     private UnmappedCollectionAttributeCascadeDeleter(UnmappedCollectionAttributeCascadeDeleter original, boolean jpaProviderDeletesCollection) {
         super(original);
         this.ownerEntityClass = original.ownerEntityClass;
-        this.ownerIdAttributeName = original.ownerIdAttributeName;
+        this.ownerIdAttributeNames = original.ownerIdAttributeNames;
         this.mappedByAttributeName = original.mappedByAttributeName;
         this.jpaProviderDeletesCollection = jpaProviderDeletesCollection;
         this.elementDeleter = original.elementDeleter;
@@ -90,29 +94,43 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
     @Override
     public void removeByOwnerId(UpdateContext context, Object ownerId) {
         EntityViewManagerImpl evm = context.getEntityViewManager();
+        Set<String> ownerIds = new HashSet<>();
+        for (Field field : Arrays.asList(ownerId.getClass().getFields())){
+            ownerIds.add(field.getName());
+        }
         if (cascadeDeleteElement) {
             List<Object> elementIds;
             if (mappedByAttributeName == null) {
                 // If there is no mapped by attribute, the collection has a join table
                 if (evm.getDbmsDialect().supportsReturningColumns()) {
-                    List<Tuple> tuples = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName)
-                            .where(ownerIdAttributeName).eq(ownerId)
-                            .executeWithReturning(attributeName + "." + elementIdAttributeName)
-                            .getResultList();
+                            DeleteCriteriaBuilder cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
+                    for(String ownerIdAttributeName : ownerIdAttributeNames){
+                        //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
+                        cb.where(ownerIdAttributeName).in(ownerIds);
+                    }
+                    //TODO: I believe here we assume that the attribute to be considered only consists of one id; but maybe this will go through fine if id is a composite id as well.
+                    List<Tuple> tuples = (List<Tuple>) cb.executeWithReturning(attributeName + "." + elementIdAttributeName).getResultList();
 
                     elementIds = new ArrayList<>(tuples.size());
                     for (Tuple tuple : tuples) {
                         elementIds.add(tuple.get(0));
                     }
                 } else {
-                    elementIds = (List<Object>) evm.getCriteriaBuilderFactory().create(context.getEntityManager(), ownerEntityClass, "e")
-                            .where(ownerIdAttributeName).eq(ownerId)
-                            .select("e." + attributeName + "." + elementIdAttributeName)
-                            .getResultList();
+                    CriteriaBuilder cb1 =  evm.getCriteriaBuilderFactory().create(context.getEntityManager(), ownerEntityClass, "e");
+                    for(String ownerIdAttributeName : ownerIdAttributeNames){
+                        //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
+                        cb1.where(ownerIdAttributeName).in(ownerIds);
+                    }
+                    //TODO: I believe here we assume that the attribute to be considered only consists of one id; but maybe this will go through fine if id is a composite id as well.
+                    elementIds = (List<Object>) cb1.select("e." + attributeName + "." + elementIdAttributeName);
+
                     if (!elementIds.isEmpty()) {
                         // We must always delete this, otherwise we might get a constraint violation because of the cascading delete
                         DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
-                        cb.where(ownerIdAttributeName).eq(ownerId);
+                        for(String ownerIdAttributeName : ownerIdAttributeNames){
+                            //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
+                            cb.where(ownerIdAttributeName).in(ownerIds);
+                        }
                         cb.executeUpdate();
                     }
                 }
@@ -125,7 +143,10 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
             }
         } else if (!jpaProviderDeletesCollection) {
             DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
-            cb.where(ownerIdAttributeName).eq(ownerId);
+            for(String ownerIdAttributeName : ownerIdAttributeNames){
+                //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
+                cb.where(ownerIdAttributeName).in(ownerIds);
+            }
             cb.executeUpdate();
         }
     }

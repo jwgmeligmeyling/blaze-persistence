@@ -45,7 +45,9 @@ import com.blazebit.persistence.view.metamodel.ViewType;
 
 import javax.persistence.Query;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -56,7 +58,7 @@ public final class InverseFlusher<E> {
 
     private final Class<?> parentEntityClass;
     private final String attributeName;
-    private final String parentIdAttributeName;
+    private final Set<String> parentIdAttributeNames;
     private final String childIdAttributeName;
     private final UnmappedAttributeCascadeDeleter deleter;
     // Maps the parent view object to an entity via means of em.getReference
@@ -78,13 +80,13 @@ public final class InverseFlusher<E> {
     private final Mapper<E, Object> parentEntityOnChildEntityMapper;
     private final InverseEntityToEntityMapper childEntityToEntityMapper;
 
-    public InverseFlusher(Class<?> parentEntityClass, String attributeName, String parentIdAttributeName, String childIdAttributeName, UnmappedAttributeCascadeDeleter deleter,
+    public InverseFlusher(Class<?> parentEntityClass, String attributeName, Set<String> parentIdAttributeNames, String childIdAttributeName, UnmappedAttributeCascadeDeleter deleter,
                           ViewToEntityMapper parentReferenceViewToEntityMapper, DirtyAttributeFlusher<?, E, Object> parentReferenceAttributeFlusher,
                           Mapper<E, Object> parentEntityOnChildViewMapper, InverseViewToEntityMapper childViewToEntityMapper, ViewToEntityMapper childReferenceViewToEntityMapper,
                           Mapper<E, Object> parentEntityOnChildEntityMapper, InverseEntityToEntityMapper childEntityToEntityMapper) {
         this.parentEntityClass = parentEntityClass;
         this.attributeName = attributeName;
-        this.parentIdAttributeName = parentIdAttributeName;
+        this.parentIdAttributeNames = parentIdAttributeNames;
         this.childIdAttributeName = childIdAttributeName;
         this.deleter = deleter;
         this.parentReferenceViewToEntityMapper = parentReferenceViewToEntityMapper;
@@ -206,21 +208,27 @@ public final class InverseFlusher<E> {
             );
 
             UnmappedAttributeCascadeDeleter deleter = null;
-            String parentIdAttributeName = null;
+            Set<SingularAttribute<?,?>> parentIdAttributes = Collections.EMPTY_SET;
+            Set<String> parentIdAttributeNamesWithMapping = new HashSet<>();
+            Set<String> parentIdAttributeNames = new HashSet<>();
             String childIdAttributeName = null;
             // Only construct when orphanRemoval or delete cascading is enabled, orphanRemoval implies delete cascading
             if (attribute.isDeleteCascaded()) {
                 EntityMetamodel entityMetamodel = evm.getMetamodel().getEntityMetamodel();
                 ExtendedManagedType elementManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, elementEntityClass);
-                parentIdAttributeName = entityMetamodel.getManagedType(ExtendedManagedType.class, viewType.getEntityClass()).getIdAttribute().getName();
+                String mapping = attribute.getMappedBy();
+                parentIdAttributes = entityMetamodel.getManagedType(ExtendedManagedType.class, viewType.getEntityClass()).getIdAttributes();
+                for(SingularAttribute parentIdAttribute : parentIdAttributes){
+                    parentIdAttributeNamesWithMapping.add(mapping + "." + parentIdAttribute.getName());
+                    parentIdAttributeNames.add(parentIdAttribute.getName());
+                }
                 childIdAttributeName = elementManagedType.getIdAttribute().getName();
 
-                String mapping = attribute.getMappedBy();
                 ExtendedAttribute extendedAttribute = elementManagedType.getAttribute(mapping);
                 if (childTypeDescriptor.isSubview()) {
                     deleter = new ViewTypeCascadeDeleter(childTypeDescriptor.getViewToEntityMapper());
                 } else if (childTypeDescriptor.isJpaEntity()) {
-                    deleter = new UnmappedBasicAttributeCascadeDeleter(evm, mapping, extendedAttribute, mapping + "." + parentIdAttributeName, false);
+                    deleter = new UnmappedBasicAttributeCascadeDeleter(evm, mapping, extendedAttribute, parentIdAttributeNamesWithMapping, false);
                 }
             }
 
@@ -248,7 +256,7 @@ public final class InverseFlusher<E> {
             return new InverseFlusher(
                     viewType.getEntityClass(),
                     attribute.getMapping(),
-                    parentIdAttributeName,
+                    parentIdAttributes,
                     childIdAttributeName,
                     deleter,
                     parentReferenceViewToEntityMapper,
