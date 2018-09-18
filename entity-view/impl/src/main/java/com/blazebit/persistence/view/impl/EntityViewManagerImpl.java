@@ -243,12 +243,17 @@ public class EntityViewManagerImpl implements EntityViewManager {
         EntityType<?> entityType = (EntityType<?>) managedViewType.getJpaManagedType();
         Set<SingularAttribute<?, ?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(entityType);
         CriteriaBuilder<?> cb = cbf.create(entityManager, managedViewType.getEntityClass());
-        List<String> entityIdFieldNames = new ArrayList<>();
-        for (Field field : Arrays.asList(entityId.getClass().getFields())){
-            entityIdFieldNames.add(field.getName());
+        Map<String,Object> entityIdValues = new HashMap<>();
+        for (Field field : Arrays.asList(entityId.getClass().getDeclaredFields())){
+            field.setAccessible(Boolean.TRUE);
+            try {
+                entityIdValues.put(field.getName(),field.get(entityId));
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Could not access field: "+field.getName());
+            }
         }
         for (SingularAttribute<?,?> idAttribute : idAttributeSet){
-            cb.where(idAttribute.getName()).in(entityIdFieldNames);
+            cb.where(idAttribute.getName()).eq(entityIdValues.get(idAttribute.getName()));
         }
         List<T> resultList = applySetting(entityViewSetting, cb).getResultList();
         return resultList.isEmpty() ? null : resultList.get(0);

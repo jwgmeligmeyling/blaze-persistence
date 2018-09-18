@@ -17,6 +17,7 @@
 package com.blazebit.persistence.view.impl.metamodel;
 
 import com.blazebit.persistence.view.LockMode;
+import com.blazebit.persistence.view.spi.EntityViewAttributeMapping;
 import com.blazebit.persistence.view.spi.EntityViewMapping;
 
 import java.lang.reflect.Method;

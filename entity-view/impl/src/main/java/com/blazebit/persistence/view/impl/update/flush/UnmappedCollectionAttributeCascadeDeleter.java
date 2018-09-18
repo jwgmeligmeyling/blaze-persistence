@@ -47,7 +47,7 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
         this.ownerIdAttributeNames = ownerIdAttributeNames;
         this.mappedByAttributeName = attribute.getMappedBy();
         JpaProvider jpaProvider = evm.getJpaProvider();
-        if (elementIdAttributeName != null) {
+        if (elementIdAttributeNames != null && !elementIdAttributeNames.isEmpty()) {
             this.jpaProviderDeletesCollection = jpaProvider.supportsJoinTableCleanupOnDelete();
             if (cascadeDeleteElement) {
                 Set<String> elementOwnerIdAttributeNames = new HashSet<>();
@@ -108,8 +108,12 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
                         //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
                         cb.where(ownerIdAttributeName).in(ownerIds);
                     }
-                    //TODO: I believe here we assume that the attribute to be considered only consists of one id; but maybe this will go through fine if id is a composite id as well.
-                    List<Tuple> tuples = (List<Tuple>) cb.executeWithReturning(attributeName + "." + elementIdAttributeName).getResultList();
+
+                    List<String> returningAttributes = new ArrayList<>();
+                    for (String elementIdAttributeName : elementIdAttributeNames){
+                        returningAttributes.add(attributeName + "." + elementIdAttributeName);
+                    }
+                    List<Tuple> tuples = (List<Tuple>) cb.executeWithReturning((String[]) returningAttributes.toArray()).getResultList();
 
                     elementIds = new ArrayList<>(tuples.size());
                     for (Tuple tuple : tuples) {
@@ -121,8 +125,10 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
                         //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
                         cb1.where(ownerIdAttributeName).in(ownerIds);
                     }
-                    //TODO: I believe here we assume that the attribute to be considered only consists of one id; but maybe this will go through fine if id is a composite id as well.
-                    elementIds = (List<Object>) cb1.select("e." + attributeName + "." + elementIdAttributeName);
+                    for (String elementIdAttributeName : elementIdAttributeNames){
+                        cb1.select("e." + attributeName + "." +elementIdAttributeName);
+                    }
+                    elementIds = (List<Object>) cb1.getResultList();
 
                     if (!elementIds.isEmpty()) {
                         // We must always delete this, otherwise we might get a constraint violation because of the cascading delete

@@ -16,6 +16,7 @@
 
 package com.blazebit.persistence.view.impl.update.flush;
 
+import com.blazebit.persistence.CriteriaBuilder;
 import com.blazebit.persistence.DeleteCriteriaBuilder;
 import com.blazebit.persistence.parser.EntityMetamodel;
 import com.blazebit.persistence.spi.ExtendedAttribute;
@@ -34,7 +35,6 @@ import com.blazebit.persistence.view.impl.entity.ViewToEntityMapper;
 import com.blazebit.persistence.view.impl.mapper.Mapper;
 import com.blazebit.persistence.view.impl.mapper.Mappers;
 import com.blazebit.persistence.view.impl.metamodel.AbstractMethodAttribute;
-import com.blazebit.persistence.view.metamodel.SingularAttribute;
 import com.blazebit.persistence.view.spi.type.EntityViewProxy;
 import com.blazebit.persistence.view.impl.update.EntityViewUpdaterImpl;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
@@ -44,10 +44,9 @@ import com.blazebit.persistence.view.metamodel.Type;
 import com.blazebit.persistence.view.metamodel.ViewType;
 
 import javax.persistence.Query;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import javax.persistence.metamodel.SingularAttribute;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  *
@@ -101,7 +100,7 @@ public final class InverseFlusher<E> {
     public static <E> InverseFlusher<E> forAttribute(EntityViewManagerImpl evm, ManagedViewType<?> viewType, AbstractMethodAttribute<?, ?> attribute, TypeDescriptor childTypeDescriptor) {
         if (attribute.getMappedBy() != null) {
             String attributeLocation = attribute.getLocation();
-            Type<?> elementType = attribute instanceof PluralAttribute<?, ?, ?> ? ((PluralAttribute<?, ?, ?>) attribute).getElementType() : ((SingularAttribute<?, ?>) attribute).getType();
+            Type<?> elementType = attribute instanceof PluralAttribute<?, ?, ?> ? ((PluralAttribute<?, ?, ?>) attribute).getElementType() : ((com.blazebit.persistence.view.metamodel.SingularAttribute<?, ?>) attribute).getType();
             Class<?> elementEntityClass = null;
 
             AttributeAccessor parentReferenceAttributeAccessor = null;
@@ -273,16 +272,30 @@ public final class InverseFlusher<E> {
     }
 
     public List<PostFlushDeleter> removeByOwnerId(UpdateContext context, Object ownerId) {
+        Map<String, Object> ownerIds = new HashMap<>();
+        for (Field field : Arrays.asList(ownerId.getClass().getFields())){
+            try {
+                ownerIds.put(field.getName(),field.get(ownerId));
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+            }
+        }
         EntityViewManagerImpl evm = context.getEntityViewManager();
-        List<Object> elementIds = (List<Object>) evm.getCriteriaBuilderFactory().create(context.getEntityManager(), parentEntityClass, "e")
-                .where(parentIdAttributeName).eq(ownerId)
-                .select("e." + attributeName + "." + childIdAttributeName)
+        CriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().create(context.getEntityManager(), parentEntityClass, "e");
+        for(String parentIdAttributeName : parentIdAttributeNames){
+            //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
+            cb.where(parentIdAttributeName).in(ownerIds.keySet());
+        }
+        List<Object> elementIds = (List<Object>) cb.select("e." + attributeName + "." + childIdAttributeName)
                 .getResultList();
         if (!elementIds.isEmpty()) {
             // We must always delete this, otherwise we might get a constraint violation because of the cascading delete
-            DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), parentEntityClass, "e", attributeName);
-            cb.where(parentIdAttributeName).eq(ownerId);
-            cb.executeUpdate();
+            DeleteCriteriaBuilder<?> dcb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), parentEntityClass, "e", attributeName);
+            for(String parentIdAttributeName : parentIdAttributeNames){
+                //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
+                dcb.where(parentIdAttributeName).in(ownerIds.keySet());
+            }
+            dcb.executeUpdate();
         }
 
         return Collections.<PostFlushDeleter>singletonList(new PostFlushInverseCollectionElementByIdDeleter(deleter, elementIds));

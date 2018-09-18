@@ -183,9 +183,9 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
         this.fullEntityLoader = mutable ? new FullEntityLoader(evm, viewType) : null;
 
         Set<MethodAttribute<?, ?>> attributes = (Set<MethodAttribute<?, ?>>) (Set<?>) viewType.getAttributes();
-        Set<String> idAttributeNames = Collections.emptySet();
-        Set<String> mappings = Collections.emptySet();
-        Set<SingularAttribute<?, ?>> jpaIdAttributes = Collections.emptySet();
+        Set<String> idAttributeNames = new HashSet<>();
+        Set<String> mappings = new HashSet<>();
+        Set<SingularAttribute<?, ?>> jpaIdAttributes = new HashSet<>();
         Set<AbstractMethodAttribute<?, ?>> idAttributes = Collections.emptySet();
         AbstractMethodAttribute<?, ?> versionAttribute;
 

@@ -237,11 +237,13 @@ public class AnnotationViewMappingReader implements ViewMappingReader {
 
         Set<MethodAttributeMapping> attributeMappings = new HashSet<>(idAttributeMapping.values());
         attributeMappings.remove(null);
-        if (attributeMappings.size()==1){
+        //TODO: remove all instances of IdAttributeMapping (without plural)
+        if (attributeMappings.size()!=0){
             viewMapping.setIdAttributeMapping(attributeMappings.iterator().next());
         } else {
-            viewMapping.setIdAttributeMappings(attributeMappings);
+            viewMapping.setIdAttributeMapping(null);
         }
+        viewMapping.setIdAttributeMappings(attributeMappings);
 
 
 
