@@ -92,6 +92,7 @@ import com.blazebit.persistence.view.spi.type.EntityViewProxy;
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SingularAttribute;
+import javax.persistence.metamodel.Type;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -244,12 +245,28 @@ public class EntityViewManagerImpl implements EntityViewManager {
         Set<SingularAttribute<?, ?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(entityType);
         CriteriaBuilder<?> cb = cbf.create(entityManager, managedViewType.getEntityClass());
         Map<String,Object> entityIdValues = new HashMap<>();
-        for (Field field : Arrays.asList(entityId.getClass().getDeclaredFields())){
-            field.setAccessible(Boolean.TRUE);
-            try {
-                entityIdValues.put(field.getName(),field.get(entityId));
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException("Could not access field: "+field.getName());
+        Type<?> idType = entityType.getIdType();
+        if(idType.getPersistenceType().equals(Type.PersistenceType.BASIC)){
+            Iterator iterator = idAttributeSet.iterator();
+            if(!iterator.hasNext()){
+                throw new RuntimeException("The entity type" + entityType.getName() + "does not have an Id!");
+                }
+
+            //I believe this approach also works for BigDecimal and the like? I have added that possibility in the check above.
+            entityIdValues.put(((SingularAttribute) iterator.next()).getName(),entityId);
+
+            if (iterator.hasNext()){
+                throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
+                        + entityType.getName() + "has more than one Id field!");
+            }
+        } else {
+            for (Field field : Arrays.asList(entityId.getClass().getDeclaredFields())){
+                field.setAccessible(Boolean.TRUE);
+                try {
+                    entityIdValues.put(field.getName(),field.get(entityId));
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Could not access field: "+field.getName()+".");
+                }
             }
         }
         for (SingularAttribute<?,?> idAttribute : idAttributeSet){

@@ -221,7 +221,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                 throw new IllegalArgumentException("Expected JPA id attribute [" + jpaNames.toString() + "] to match the entity view id attribute mapping [" + mappings.toString() + "] but it didn't!");
             }
         } else {
-            idAttributes = null;
+            idAttributes = Collections.EMPTY_SET;
             versionAttribute = null;
             versionFlusher = null;
         }

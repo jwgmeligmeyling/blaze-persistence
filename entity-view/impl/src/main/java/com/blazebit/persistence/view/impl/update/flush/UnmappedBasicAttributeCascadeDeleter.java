@@ -59,7 +59,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
         this.ownerIdAttributeNames = ownerIdAttributeNames;
         StringBuilder deleteByIdQuery = new StringBuilder("DELETE FROM " + entityType.getName() );
         for(String elementIdAttributeName : elementIdAttributeNames){
-            deleteByIdQuery.append(" e WHERE e." + elementIdAttributeName +" = :"+elementIdAttributeName+"_variable"+" AND");
+            deleteByIdQuery.append(" e WHERE e." + elementIdAttributeName +" = :" + elementIdAttributeName + "_variable" + " AND");
         }
         deleteByIdQuery.setLength(deleteByIdQuery.length() - " AND".length());
         deleteQuery = deleteByIdQuery.toString();
@@ -67,7 +67,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
         StringBuilder deleteByOwnerIdQueryBuilder = new StringBuilder("DELETE FROM " + entityType.getName());
         int i = 1;
         for(String ownerIdAttributeName : ownerIdAttributeNames){
-            deleteByOwnerIdQueryBuilder.append(" e WHERE e." + ownerIdAttributeName + " = :" + ownerIdAttributeName + "_variable"+" AND");
+            deleteByOwnerIdQueryBuilder.append(" e WHERE e." + ownerIdAttributeName + " = :" + ownerIdAttributeName + "_variable" + " AND");
         }
         deleteByOwnerIdQueryBuilder.setLength(deleteByOwnerIdQueryBuilder.length() - " AND".length());
         deleteByOwnerIdQuery = deleteByOwnerIdQueryBuilder.toString();

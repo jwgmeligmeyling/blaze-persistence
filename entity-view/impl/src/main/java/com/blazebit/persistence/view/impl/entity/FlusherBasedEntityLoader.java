@@ -24,9 +24,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Query;
 import javax.persistence.metamodel.SingularAttribute;
+import javax.persistence.metamodel.Type;
 import java.lang.reflect.Field;
 import java.util.*;
-
 /**
  *
  * @author Christian Beikov
@@ -80,13 +80,30 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
     protected Object queryEntity(EntityManager em, Object id) {
         @SuppressWarnings("unchecked")
         Map<String, Object> ownerIds = new HashMap<>();
-        for (Field field : Arrays.asList(id.getClass().getFields())){
-            try {
-                ownerIds.put(field.getName(),field.get(id));
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+        Type<?> idType = em.getMetamodel().entity(entityClass).getIdType();
+        if(idType.getPersistenceType().equals(Type.PersistenceType.BASIC)){
+            Iterator iterator = idAttributeNames.iterator();
+            if(!iterator.hasNext()){
+                throw new RuntimeException("The entity type" + entityClass.getName() + "does not have an Id!");
             }
 
+            //I believe this approach also works for BigDecimal and the like? I have added that possibility in the check above.
+            ownerIds.put((String) iterator.next(),id);
+
+            if (iterator.hasNext()){
+                throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
+                        + entityClass.getName() + "has more than one Id field!");
+            }
+
+        } else {
+            for (Field field : Arrays.asList(id.getClass().getFields())){
+                try {
+                    ownerIds.put(field.getName(),field.get(id));
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+                }
+
+            }
         }
         Query query = em.createQuery(getQueryString());
         for(String idAttributeName : idAttributeNames){
