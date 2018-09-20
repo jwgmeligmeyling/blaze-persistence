@@ -19,6 +19,7 @@ package com.blazebit.persistence.view.impl.update.flush;
 import com.blazebit.persistence.CriteriaBuilder;
 import com.blazebit.persistence.DeleteCriteriaBuilder;
 import com.blazebit.persistence.parser.EntityMetamodel;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.ExtendedManagedType;
 import com.blazebit.persistence.view.OptimisticLockException;
@@ -43,9 +44,13 @@ import com.blazebit.persistence.view.metamodel.PluralAttribute;
 import com.blazebit.persistence.view.metamodel.Type;
 import com.blazebit.persistence.view.metamodel.ViewType;
 
+import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SingularAttribute;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -272,19 +277,13 @@ public final class InverseFlusher<E> {
     }
 
     public List<PostFlushDeleter> removeByOwnerId(UpdateContext context, Object ownerId) {
-        Map<String, Object> ownerIds = new HashMap<>();
-        for (Field field : Arrays.asList(ownerId.getClass().getFields())){
-            try {
-                ownerIds.put(field.getName(),field.get(ownerId));
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
-            }
-        }
+        //TODO: check whether it is correct that everything here is denoted with ``parent"  instead of ``owner".
+        Map<String, Object> ownerIds = getIdNameValueMap(parentEntityClass,ownerId,context.getEntityManager());
         EntityViewManagerImpl evm = context.getEntityViewManager();
         CriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().create(context.getEntityManager(), parentEntityClass, "e");
         for(String parentIdAttributeName : parentIdAttributeNames){
             //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
-            cb.where(parentIdAttributeName).in(ownerIds.keySet());
+            cb.where(parentIdAttributeName).eq(ownerIds.get(parentIdAttributeName));
         }
         List<Object> elementIds = (List<Object>) cb.select("e." + attributeName + "." + childIdAttributeName)
                 .getResultList();
@@ -293,7 +292,7 @@ public final class InverseFlusher<E> {
             DeleteCriteriaBuilder<?> dcb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), parentEntityClass, "e", attributeName);
             for(String parentIdAttributeName : parentIdAttributeNames){
                 //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
-                dcb.where(parentIdAttributeName).in(ownerIds.keySet());
+                dcb.where(parentIdAttributeName).eq(ownerIds.get(parentIdAttributeName));
             }
             dcb.executeUpdate();
         }
@@ -409,5 +408,52 @@ public final class InverseFlusher<E> {
 
     private boolean shouldPersist(Object view) {
         return view instanceof EntityViewProxy && ((EntityViewProxy) view).$$_isNew();
+    }
+
+    public Map<String,Object> getIdNameValueMap(Class entityClass, Object id, EntityManager em){
+        @SuppressWarnings("unchecked")
+        Map<String, Object> idMap = new HashMap<>();
+        Set<SingularAttribute<?,?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(em.getMetamodel().entity(entityClass));
+        EntityType<?> entityType = em.getMetamodel().entity(entityClass);
+        //TODO: check whether the statement below really tells us that we have only a single Id.
+        if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(javax.persistence.metamodel.Type.PersistenceType.BASIC)||
+                entityType.getIdType().getPersistenceType().equals(javax.persistence.metamodel.Type.PersistenceType.EMBEDDABLE))){
+            Iterator iterator = idAttributeSet.iterator();
+            if(!iterator.hasNext()){
+                throw new RuntimeException("The entity type" + entityClass.getName() + "does not have an Id!");
+            }
+
+            idMap.put(((SingularAttribute<?,?>) iterator.next()).getName(),id);
+
+            if (iterator.hasNext()){
+                throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
+                        + entityClass.getName() + "has more than one Id field!");
+            }
+        } else {
+            //Currently untested; probably need to copy EVMI.find code.
+//            for (Field field : Arrays.asList(id.getClass().getFields())){
+//                try {
+//                    ownerIds.put(field.getName(),field.get(id));
+//                } catch (IllegalAccessException e) {
+//                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+//                }
+//
+//            }
+            for (SingularAttribute<?,?> idAttribute : idAttributeSet){
+                Method method = (Method) idAttribute.getJavaMember();
+                method.setAccessible(Boolean.TRUE);
+                try {
+                    idMap.put(idAttribute.getName(),method.invoke(id));
+                }
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                }
+                catch (InvocationTargetException e) {
+                    throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
+                            + id.getClass().getName() + ".");
+                }
+            }
+        }
+        return idMap;
     }
 }

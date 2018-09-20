@@ -16,6 +16,7 @@
 
 package com.blazebit.persistence.view.impl.entity;
 
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.view.impl.accessor.AttributeAccessor;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
 import com.blazebit.persistence.view.impl.update.flush.DirtyAttributeFlusher;
@@ -23,9 +24,12 @@ import com.blazebit.persistence.view.impl.update.flush.DirtyAttributeFlusher;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Query;
+import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.Type;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 /**
  *
@@ -59,7 +63,7 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
             }
         }
         for (String idAttributeName : idAttributeNames){
-            sb.append(" WHERE e.").append(idAttributeName).append(" = :"+idAttributeName+"_variable"+" AND");
+            sb.append(" WHERE e.").append(idAttributeName).append(" = :"+idAttributeName.replace(".","_")+"_variable"+" AND");
         }
         sb.setLength(sb.length() - " AND".length());
         query = sb.toString();
@@ -76,47 +80,69 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
         return getReferenceOrLoad(context, id);
     }
 
-    @Override
-    protected Object queryEntity(EntityManager em, Object id) {
+    public Map<String,Object> getIdNameValueMap(Class entityClass, Object id, EntityManager em){
         @SuppressWarnings("unchecked")
-        Map<String, Object> ownerIds = new HashMap<>();
-        Type<?> idType = em.getMetamodel().entity(entityClass).getIdType();
-        if(idType.getPersistenceType().equals(Type.PersistenceType.BASIC)){
-            Iterator iterator = idAttributeNames.iterator();
+        Map<String, Object> idMap = new HashMap<>();
+        Set<SingularAttribute<?,?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(em.getMetamodel().entity(entityClass));
+        EntityType<?> entityType = em.getMetamodel().entity(entityClass);
+        //TODO: check whether the statement below really tells us that we have only a single Id.
+        if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.BASIC)||
+                entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.EMBEDDABLE))){
+            Iterator iterator = idAttributeSet.iterator();
             if(!iterator.hasNext()){
                 throw new RuntimeException("The entity type" + entityClass.getName() + "does not have an Id!");
             }
 
-            //I believe this approach also works for BigDecimal and the like? I have added that possibility in the check above.
-            ownerIds.put((String) iterator.next(),id);
+            idMap.put(((SingularAttribute<?,?>) iterator.next()).getName(),id);
 
             if (iterator.hasNext()){
                 throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
                         + entityClass.getName() + "has more than one Id field!");
             }
-
         } else {
-            for (Field field : Arrays.asList(id.getClass().getFields())){
+            //Currently untested; probably need to copy EVMI.find code.
+//            for (Field field : Arrays.asList(id.getClass().getFields())){
+//                try {
+//                    ownerIds.put(field.getName(),field.get(id));
+//                } catch (IllegalAccessException e) {
+//                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+//                }
+//
+//            }
+            for (SingularAttribute<?,?> idAttribute : idAttributeSet){
+                Method method = (Method) idAttribute.getJavaMember();
+                method.setAccessible(Boolean.TRUE);
                 try {
-                    ownerIds.put(field.getName(),field.get(id));
-                } catch (IllegalAccessException e) {
-                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+                    idMap.put(idAttribute.getName(),method.invoke(id));
                 }
-
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                }
+                catch (InvocationTargetException e) {
+                    throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
+                            + id.getClass().getName() + ".");
+                }
             }
         }
+        return idMap;
+    }
+
+    @Override
+    protected Object queryEntity(EntityManager em, Object id) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> ownerIds = getIdNameValueMap(entityClass,id,em);
+        //TODO: create IdClass test, as idType will probably return null for that case.
+        EntityType<?> entityType = em.getMetamodel().entity(entityClass);
         Query query = em.createQuery(getQueryString());
         for(String idAttributeName : idAttributeNames){
-            query.setParameter(idAttributeName+"_variable",ownerIds.get(idAttributeName));
-        }
-        //TODO: check whether the result list is actually of the form assumed in the test below.
-        List<Object> list = query.getResultList();
-        for(Map.Entry<String,Object> entry : ownerIds.entrySet()){
-            if (!list.contains(entry.getValue())) {
-                throw new EntityNotFoundException("Required entity '" + entityClass.getName() + "' with id '" + entry.getKey() + "' couldn't be found!");
-            }
+            query.setParameter(idAttributeName.replace(".","_")+"_variable",ownerIds.get(idAttributeName));
         }
 
+        List<Object> list = query.getResultList();
+        if (list.isEmpty()) {
+            throw new EntityNotFoundException("Required entity '" + entityClass.getName() + "' with id '" + id + "' couldn't be found!");
+        }
+        //TODO check whether this does not only return one element in the case of an IdClass.
         return list.get(0);
     }
 }

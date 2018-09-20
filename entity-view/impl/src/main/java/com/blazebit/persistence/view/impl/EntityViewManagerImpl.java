@@ -95,6 +95,8 @@ import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.Type;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -245,8 +247,9 @@ public class EntityViewManagerImpl implements EntityViewManager {
         Set<SingularAttribute<?, ?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(entityType);
         CriteriaBuilder<?> cb = cbf.create(entityManager, managedViewType.getEntityClass());
         Map<String,Object> entityIdValues = new HashMap<>();
-        Type<?> idType = entityType.getIdType();
-        if(idType.getPersistenceType().equals(Type.PersistenceType.BASIC)){
+        //TODO Hibernate returns null when getIdType it is called on an entityType which uses IdClass.
+        if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.BASIC)||
+                entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.EMBEDDABLE))){
             Iterator iterator = idAttributeSet.iterator();
             if(!iterator.hasNext()){
                 throw new RuntimeException("The entity type" + entityType.getName() + "does not have an Id!");
@@ -260,17 +263,36 @@ public class EntityViewManagerImpl implements EntityViewManager {
                         + entityType.getName() + "has more than one Id field!");
             }
         } else {
-            for (Field field : Arrays.asList(entityId.getClass().getDeclaredFields())){
-                field.setAccessible(Boolean.TRUE);
+//            for (Field field : Arrays.asList(entityId.getClass().getDeclaredFields())){
+//                field.setAccessible(Boolean.TRUE);
+//                try {
+//                    entityIdValues.put(field.getName(),field.get(entityId));
+//                } catch (IllegalAccessException e) {
+//                    throw new IllegalStateException("Could not access field: "+field.getName()+".");
+//                }
+//            }
+//            entityIdValues.remove("serialVersionUID");
+            for (SingularAttribute<?,?> idAttribute : idAttributeSet){
+                Method method = (Method) idAttribute.getJavaMember();
+                method.setAccessible(Boolean.TRUE);
                 try {
-                    entityIdValues.put(field.getName(),field.get(entityId));
-                } catch (IllegalAccessException e) {
-                    throw new IllegalStateException("Could not access field: "+field.getName()+".");
+                    entityIdValues.put(idAttribute.getName(),method.invoke(entityId));
                 }
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                }
+                catch (InvocationTargetException e) {
+                    throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
+                            + entityId.getClass().getName() + ".");
+                }
+//                for (Field field : Arrays.asList(idAttribute.getJavaType().getDeclaredFields())){
+//                    field.setAccessible(Boolean.TRUE);
+//                    basicIdAttributeNames.add(field.getName());
+//                }
             }
         }
-        for (SingularAttribute<?,?> idAttribute : idAttributeSet){
-            cb.where(idAttribute.getName()).eq(entityIdValues.get(idAttribute.getName()));
+        for (Map.Entry<String, Object> entityIdValuesEntry : entityIdValues.entrySet()){
+            cb.where(entityIdValuesEntry.getKey()).eq(entityIdValuesEntry.getValue());
         }
         List<T> resultList = applySetting(entityViewSetting, cb).getResultList();
         return resultList.isEmpty() ? null : resultList.get(0);

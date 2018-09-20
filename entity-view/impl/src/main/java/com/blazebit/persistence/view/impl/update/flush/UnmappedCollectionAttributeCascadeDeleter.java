@@ -24,8 +24,14 @@ import com.blazebit.persistence.spi.JpaProvider;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
 
+import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.SingularAttribute;
+import javax.persistence.metamodel.Type;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -94,10 +100,7 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
     @Override
     public void removeByOwnerId(UpdateContext context, Object ownerId) {
         EntityViewManagerImpl evm = context.getEntityViewManager();
-        Set<String> ownerIds = new HashSet<>();
-        for (Field field : Arrays.asList(ownerId.getClass().getFields())){
-            ownerIds.add(field.getName());
-        }
+        Map<String, Object> ownerIds = getIdNameValueMap(ownerEntityClass,ownerId,context.getEntityManager(),ownerIdAttributeNames);
         if (cascadeDeleteElement) {
             List<Object> elementIds;
             if (mappedByAttributeName == null) {
@@ -106,9 +109,8 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
                             DeleteCriteriaBuilder cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
                     for(String ownerIdAttributeName : ownerIdAttributeNames){
                         //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
-                        cb.where(ownerIdAttributeName).in(ownerIds);
+                        cb.where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
                     }
-
                     List<String> returningAttributes = new ArrayList<>();
                     for (String elementIdAttributeName : elementIdAttributeNames){
                         returningAttributes.add(attributeName + "." + elementIdAttributeName);
@@ -123,7 +125,7 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
                     CriteriaBuilder cb1 =  evm.getCriteriaBuilderFactory().create(context.getEntityManager(), ownerEntityClass, "e");
                     for(String ownerIdAttributeName : ownerIdAttributeNames){
                         //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
-                        cb1.where(ownerIdAttributeName).in(ownerIds);
+                        cb1.where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
                     }
                     for (String elementIdAttributeName : elementIdAttributeNames){
                         cb1.select("e." + attributeName + "." +elementIdAttributeName);
@@ -135,7 +137,7 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
                         DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
                         for(String ownerIdAttributeName : ownerIdAttributeNames){
                             //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
-                            cb.where(ownerIdAttributeName).in(ownerIds);
+                            cb.where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
                         }
                         cb.executeUpdate();
                     }
@@ -151,7 +153,7 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
             DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
             for(String ownerIdAttributeName : ownerIdAttributeNames){
                 //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size
-                cb.where(ownerIdAttributeName).in(ownerIds);
+                cb.where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
             }
             cb.executeUpdate();
         }

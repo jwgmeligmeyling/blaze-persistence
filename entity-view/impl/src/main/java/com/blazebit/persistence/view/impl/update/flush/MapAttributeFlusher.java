@@ -528,10 +528,7 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
 
     private List<PostFlushDeleter> removeByOwnerId(UpdateContext context, Object ownerId, boolean cascade) {
         EntityViewManagerImpl evm = context.getEntityViewManager();
-        Set<String> ownerIdNames = new HashSet<>();
-        for (Field field : Arrays.asList(ownerId.getClass().getFields())){
-            ownerIdNames.add(field.getName());
-        }
+        Map<String,Object> ownerIds = getIdNameValueMap(ownerEntityClass,ownerId,context.getEntityManager());
 
         if (cascade) {
             List<Object> elementIds;
@@ -540,7 +537,7 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
                 DeleteCriteriaBuilder<?> deleteCriteriaBuilder = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
                 List<String> returningAttributes = new ArrayList<>();
                 for (String ownerIdAttributeName : ownerIdAttributeNames){
-                    deleteCriteriaBuilder.where(ownerIdAttributeName).in(ownerIdNames);
+                    deleteCriteriaBuilder.where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
                     returningAttributes.add(attributeName + "." + ownerIdAttributeName);
                 }
 
@@ -554,7 +551,7 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
                 CriteriaBuilder<?> criteriaBuilder = evm.getCriteriaBuilderFactory().create(context.getEntityManager(), ownerEntityClass, "e");
                 for(String ownerIdAttributeName : ownerIdAttributeNames){
                      criteriaBuilder
-                             .where(ownerIdAttributeName).in(ownerIdNames);
+                             .where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
                 }
                 for (String elementDescriptorIdAttributeName : elementDescriptor.getEntityIdAttributeNames()){
                     criteriaBuilder.select("e." + attributeName + "." + elementDescriptorIdAttributeName);
@@ -576,7 +573,7 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
             // delete from Entity(collectionRole) e where e.id = :id
             DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
             for(String ownerIdAttributeName : ownerIdAttributeNames){
-                cb.where("e." + ownerIdAttributeName).eq(ownerId);
+                cb.where("e." + ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
             }
             cb.executeUpdate();
         }

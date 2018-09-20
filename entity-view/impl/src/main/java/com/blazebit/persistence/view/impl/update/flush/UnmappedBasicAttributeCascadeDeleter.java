@@ -29,6 +29,7 @@ import com.blazebit.reflection.ReflectionUtils;
 import javax.persistence.Query;
 import javax.persistence.Tuple;
 import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.Type;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -59,7 +60,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
         this.ownerIdAttributeNames = ownerIdAttributeNames;
         StringBuilder deleteByIdQuery = new StringBuilder("DELETE FROM " + entityType.getName() );
         for(String elementIdAttributeName : elementIdAttributeNames){
-            deleteByIdQuery.append(" e WHERE e." + elementIdAttributeName +" = :" + elementIdAttributeName + "_variable" + " AND");
+            deleteByIdQuery.append(" e WHERE e." + elementIdAttributeName +" = :" + elementIdAttributeName.replace(".","_") + "_variable" + " AND");
         }
         deleteByIdQuery.setLength(deleteByIdQuery.length() - " AND".length());
         deleteQuery = deleteByIdQuery.toString();
@@ -67,7 +68,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
         StringBuilder deleteByOwnerIdQueryBuilder = new StringBuilder("DELETE FROM " + entityType.getName());
         int i = 1;
         for(String ownerIdAttributeName : ownerIdAttributeNames){
-            deleteByOwnerIdQueryBuilder.append(" e WHERE e." + ownerIdAttributeName + " = :" + ownerIdAttributeName + "_variable" + " AND");
+            deleteByOwnerIdQueryBuilder.append(" e WHERE e." + ownerIdAttributeName + " = :" + ownerIdAttributeName.replace(".","_") + "_variable" + " AND".replaceAll(".","_"));
         }
         deleteByOwnerIdQueryBuilder.setLength(deleteByOwnerIdQueryBuilder.length() - " AND".length());
         deleteByOwnerIdQuery = deleteByOwnerIdQueryBuilder.toString();
@@ -116,19 +117,13 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
     public void removeByOwnerId(UpdateContext context, Object ownerId) {
         Object[] returnedValues = null;
         Object id = null;
-        Map<String, Object> ownerIds = new HashMap<>();
-        for (Field field : Arrays.asList(id.getClass().getFields())){
-            try {
-                ownerIds.put(field.getName(),field.get(id));
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
-            }
-        }
+        //TODO: figure out whether I should use ownerIdAttributeNames or elementIdAttributeNames below, and whether I should use the elementEntityClass or attempt to find the ownerEntityClass.
+        Map<String, Object> ownerIds = getIdNameValueMap(elementEntityClass,ownerId,context.getEntityManager(),ownerIdAttributeNames);
         if (requiresDeleteAsEntity) {
             CriteriaBuilder<?> cb = context.getEntityViewManager().getCriteriaBuilderFactory().create(context.getEntityManager(), elementEntityClass);
             //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
             for(String ownerIdAttributeName : ownerIdAttributeNames){
-                cb.where(ownerIdAttributeName).in(ownerIds.keySet());
+                cb.where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
             }
             context.getEntityManager().remove(cb.getSingleResult());
             // We need to flush here, otherwise the deletion will be deferred and might cause a constraint violation
@@ -145,7 +140,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
                 cb.from(elementEntityClass);
                 //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
                 for(String ownerIdAttributeName : ownerIdAttributeNames){
-                    cb.where(ownerIdAttributeName).in(ownerIds.keySet());
+                    cb.where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
                 }                for (String attribute : returningAttributes) {
                     cb.select(attribute);
                 }
@@ -165,22 +160,24 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
 
     private void removeWithoutPreCascadeDelete(UpdateContext context, Object ownerId, Object[] returnedValues, Object id) {
         boolean doDelete = true;
-        Map<String, Object> ownerIds = new HashMap<>();
-        for (Field field : Arrays.asList(ownerId.getClass().getFields())){
-            try {
-                ownerIds.put(field.getName(),field.get(ownerId));
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException("Cannot access owner id class property: " + e.getMessage(), e);
-            }
+        //TODO: figure out whether I should use ownerIdAttributeNames or elementIdAttributeNames below, and whether I should use the elementEntityClass or attempt to find the ownerEntityClass.
+        Map<String, Object> ownerIdFieldValueMap = new HashMap<>();
+        getDeclaredFieldsFromId(ownerId, ownerIdFieldValueMap,ownerIdAttributeNames);
+
+        Map<String, Object> idFieldValueMap = new HashMap<>();
+        getDeclaredFieldsFromId(id, idFieldValueMap,elementIdAttributeNames);
+
+        Map<String, Object> ownerIdValueMap = new HashMap<>();
+        for (String ownerIdAttributeName : ownerIdAttributeNames){
+            ownerIdValueMap.put(ownerIdAttributeName,ownerIdFieldValueMap.get(ownerIdAttributeName));
         }
-        Map<String, Object> ids = new HashMap<>();
-        for (Field field : Arrays.asList(id.getClass().getFields())){
-            try {
-                ownerIds.put(field.getName(),field.get(id));
-            } catch (IllegalAccessException e) {
-                throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
-            }
+
+        Map<String, Object> elementIdValueMap = new HashMap<>();
+        for (String elementIdAttributeName : elementIdAttributeNames){
+            elementIdValueMap.put(elementIdAttributeName,ownerIdFieldValueMap.get(elementIdAttributeName));
         }
+
+
         // need to "return" the values from the delete query for the post deleters since the values aren't available after executing the delete query
         if (unmappedPostRemoveCascadeDeleters.length != 0 && returnedValues == null) {
             List<String> returningAttributes = new ArrayList<>();
@@ -195,12 +192,12 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
                 //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
                 if (id == null) {
                     for(String ownerIdAttributeName : ownerIdAttributeNames){
-                        cb.where(ownerIdAttributeName).in(ownerIds.keySet());
+                        cb.where(ownerIdAttributeName).eq(ownerIdValueMap.get(ownerIdAttributeName));
                     }
                     //TODO: I believe here we assume that the attribute to be considered only consists of one id; but maybe this will go through fine if id is a composite id as well. Edit: it does not.
                 } else {
                     for(String elementIdAttributeName : elementIdAttributeNames){
-                        cb.where(elementIdAttributeName).in(ids.keySet());
+                        cb.where(elementIdAttributeName).eq(elementIdValueMap.get(elementIdAttributeName));
                     }
                 }
 
@@ -213,11 +210,11 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
                 cb.from(elementEntityClass);
                 if (id == null) {
                     for(String ownerIdAttributeName : ownerIdAttributeNames){
-                        cb.where(ownerIdAttributeName).in(ownerIds.keySet());
+                        cb.where(ownerIdAttributeName).eq(ownerIdValueMap.get(ownerIdAttributeName));
                     }
                 } else {
                     for(String elementIdAttributeName : elementIdAttributeNames){
-                        cb.where(elementIdAttributeName).in(ids.keySet());
+                        cb.where(elementIdAttributeName).eq(elementIdValueMap.get(elementIdAttributeName));
                     }
                 }
                 for (String attribute : returningAttributes) {
@@ -241,12 +238,12 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
                 if (id == null) {
                     Query query = context.getEntityManager().createQuery(deleteByOwnerIdQuery);
                     for (String ownerIdAttributeName : ownerIdAttributeNames)
-                    query.setParameter(ownerIdAttributeName+"_variable",ownerIds.get(ownerIdAttributeName));
+                    query.setParameter(ownerIdAttributeName.replace(".","_")+"_variable",ownerIdValueMap.get(ownerIdAttributeName));
                     query.executeUpdate();
                 } else {
                     Query query = context.getEntityManager().createQuery(deleteQuery);
                     for (String elementIdAttributeName : elementIdAttributeNames){
-                        query.setParameter(elementIdAttributeName + "_variable",ids.get(elementIdAttributeName));
+                        query.setParameter(elementIdAttributeName.replace(".","_") + "_variable",elementIdValueMap.get(elementIdAttributeName));
                     }
                     query.executeUpdate();
                 }
@@ -256,6 +253,22 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
         for (int i = 0; i < unmappedPostRemoveCascadeDeleters.length; i++) {
             if (returnedValues[i] != null) {
                 unmappedPostRemoveCascadeDeleters[i].removeById(context, returnedValues[i]);
+            }
+        }
+    }
+//TODO: make this thing recursive so as to deal with embedded Id's as well.
+    private void getDeclaredFieldsFromId(Object id, Map<String, Object> idFieldValueMap, Set<String> idAttributes) {
+        if (idAttributes.size()==1) {
+            Iterator iterator = idAttributes.iterator();
+            idFieldValueMap.put((String) iterator.next(), id);
+        } else {
+            for (Field field : id.getClass().getDeclaredFields()) {
+                try {
+                    field.setAccessible(Boolean.TRUE);
+                    idFieldValueMap.put(field.getName(), field.get(id));
+                } catch (IllegalAccessException e) {
+                    new IllegalAccessException("Unable to access field" + field.getName() + ".");
+                }
             }
         }
     }
