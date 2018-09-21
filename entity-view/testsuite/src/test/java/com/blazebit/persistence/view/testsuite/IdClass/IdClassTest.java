@@ -9,27 +9,23 @@ import com.blazebit.persistence.view.EntityView;
 import com.blazebit.persistence.view.EntityViewSetting;
 import com.blazebit.persistence.view.IdMapping;
 import com.blazebit.persistence.view.testsuite.AbstractEntityViewTest;
+import javafx.scene.Parent;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.persistence.EntityManager;
-import javax.persistence.IdClass;
+import javax.persistence.*;
+import java.io.Serializable;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class IdClassTest extends AbstractEntityViewTest {
-
     @EntityView(IdClassEntity.class)
     public interface IdClassEntityView {
         @IdMapping("key1")
         Integer getKey1();
         @IdMapping("key2")
         String getKey2();
-    }
-
-    @Override
-    protected Class<?>[] getEntityClasses() {
-        return new Class<?>[]{
-                IdClassEntity.class};
     }
 
     @Override

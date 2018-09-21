@@ -20,8 +20,11 @@ import com.blazebit.persistence.parser.AttributePath;
 import com.blazebit.persistence.parser.EntityMetamodel;
 import com.blazebit.persistence.parser.ListIndexAttribute;
 import com.blazebit.persistence.parser.MapKeyAttribute;
+import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.spi.JpaProvider;
 import com.blazebit.reflection.ReflectionUtils;
 
+import javax.persistence.EntityManager;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.IdentifiableType;
@@ -31,18 +34,10 @@ import javax.persistence.metamodel.Metamodel;
 import javax.persistence.metamodel.PluralAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.Type;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.TypeVariable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.lang.reflect.*;
+import java.util.*;
+
+import static javax.persistence.metamodel.Attribute.PersistentAttributeType.BASIC;
 
 /**
  * @author Christian Beikov
@@ -398,7 +393,7 @@ public class JpaMetamodelUtils {
                 }
             } else if (attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
                 currentType = metamodel.embeddable(currentClass);
-            } else if (attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.BASIC) {
+            } else if (attr.getPersistentAttributeType() == BASIC) {
                 currentType = null;
             } else {
                 currentType = metamodel.entity(currentClass);
@@ -451,7 +446,7 @@ public class JpaMetamodelUtils {
             currentClass = resolveFieldClass(currentClass, attr);
             if (attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
                 currentType = metamodel.embeddable(currentClass);
-            } else if (attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.BASIC) {
+            } else if (attr.getPersistentAttributeType() == BASIC) {
                 currentType = null;
             } else if (isJoinable(attr) && joinableAllowed) {
                 joinableAllowed = false;
@@ -569,5 +564,167 @@ public class JpaMetamodelUtils {
         }
         return attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.MANY_TO_ONE
                 || attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.ONE_TO_ONE;
+    }
+
+    public static Map<String,Object> getIdNameValueMap(Class entityClass, Object id, Metamodel metamodel){
+        @SuppressWarnings("unchecked")
+        Map<String, Object> idMap = new HashMap<>();
+        Set<SingularAttribute<?,?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(metamodel.entity(entityClass));
+        EntityType<?> entityType = metamodel.entity(entityClass);
+        //TODO: check whether the statement below really tells us that we have only a single Id.
+        //TODO Hibernate returns null when getIdType it is called on an entityType which uses IdClass.
+        if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.BASIC)||
+                entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.EMBEDDABLE))){
+            Iterator iterator = idAttributeSet.iterator();
+            if(!iterator.hasNext()){
+                throw new RuntimeException("The entity type" + entityClass.getName() + "does not have an Id!");
+            }
+
+            idMap.put(((SingularAttribute<?,?>) iterator.next()).getName(),id);
+
+            if (iterator.hasNext()){
+                throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
+                        + entityClass.getName() + "has more than one Id field!");
+            }
+        } else {
+            //Currently untested; probably need to copy EVMI.find code.
+//            for (Field field : Arrays.asList(id.getClass().getFields())){
+//                try {
+//                    ownerIds.put(field.getName(),field.get(id));
+//                } catch (IllegalAccessException e) {
+//                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+//                }
+//
+//            }
+            for (SingularAttribute<?,?> idAttribute : idAttributeSet){
+                Method method = (Method) idAttribute.getJavaMember();
+                method.setAccessible(Boolean.TRUE);
+                try {
+                    idMap.put(idAttribute.getName(),method.invoke(id));
+                }
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                }
+                catch (InvocationTargetException e) {
+                    throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
+                            + id.getClass().getName() + ".");
+                }
+            }
+        }
+        return idMap;
+    }
+
+    public static Map<String,Object> getIdNameValueMap(Class entityClass, Object id, Metamodel metamodel, Set<String> idAttributeNames){
+        @SuppressWarnings("unchecked")
+        Map<String, Object> idMap = new HashMap<>();
+        EntityType<?> entityType = metamodel.entity(entityClass);
+
+        if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.BASIC)||
+                entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.EMBEDDABLE))){
+            //idAttributeNames is only used here; can be taken out as a dependency once entity.getIdClassAttributes() is generalized.
+            Iterator iterator = idAttributeNames.iterator();
+            if(!iterator.hasNext()){
+                throw new RuntimeException("The entity type" + entityClass.getName() + "does not have an Id!");
+            }
+
+            idMap.put((String) iterator.next(),id);
+
+            if (iterator.hasNext()){
+                throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
+                        + entityClass.getName() + "has more than one Id field!");
+            }
+        } else {
+            //Currently untested; probably need to copy EVMI.find code.
+//            for (Field field : Arrays.asList(id.getClass().getFields())){
+//                try {
+//                    ownerIds.put(field.getName(),field.get(id));
+//                } catch (IllegalAccessException e) {
+//                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+//                }
+//
+//            }
+            Set<SingularAttribute<?,?>> idAttributeSet = (Set<SingularAttribute<?, ?>>) metamodel.entity(entityClass).getIdClassAttributes();
+            for (SingularAttribute<?,?> idAttribute : idAttributeSet){
+                Method method = (Method) idAttribute.getJavaMember();
+                method.setAccessible(Boolean.TRUE);
+                try {
+                    idMap.put(idAttribute.getName(),method.invoke(id));
+                }
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                }
+                catch (InvocationTargetException e) {
+                    throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
+                            + id.getClass().getName() + ".");
+                }
+            }
+        }
+        return idMap;
+    }
+
+    public static Map<String,Object> getIdNameValueMap(Class entityClass, Object id, Metamodel metamodel, EntityMetamodel entityMetamodel, JpaProvider jpaProvider){
+        @SuppressWarnings("unchecked")
+        Map<String, Object> idMap = new HashMap<>();
+        Set<SingularAttribute<?,?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(metamodel.entity(entityClass));
+        EntityType<?> entityType = metamodel.entity(entityClass);
+        //TODO: check whether the statement below really tells us that we have only a single Id.
+        //TODO Hibernate returns null when getIdType it is called on an entityType which uses IdClass.
+        if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.BASIC)||
+                entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.EMBEDDABLE))){
+            Iterator iterator = idAttributeSet.iterator();
+            if(!iterator.hasNext()){
+                throw new RuntimeException("The entity type" + entityClass.getName() + "does not have an Id!");
+            }
+
+            idMap.put(((SingularAttribute<?,?>) iterator.next()).getName(),id);
+
+            if (iterator.hasNext()){
+                throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
+                        + entityClass.getName() + "has more than one Id field!");
+            }
+        } else {
+            //Currently untested; probably need to copy EVMI.find code.
+//            for (Field field : Arrays.asList(id.getClass().getFields())){
+//                try {
+//                    ownerIds.put(field.getName(),field.get(id));
+//                } catch (IllegalAccessException e) {
+//                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
+//                }
+//
+//            }
+            for (SingularAttribute<?,?> idAttribute : idAttributeSet){
+                if(entityMetamodel.getManagedType(ExtendedManagedType.class,entityClass).getAttribute(idAttribute.getName()).getAttribute().getPersistentAttributeType()==BASIC){
+                    Method method = (Method) idAttribute.getJavaMember();
+                    method.setAccessible(Boolean.TRUE);
+                    try {
+                        idMap.put(idAttribute.getName(),method.invoke(id));
+                    }
+                    catch (IllegalAccessException e) {
+                        throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                    }
+                    catch (InvocationTargetException e) {
+                        throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
+                                + id.getClass().getName() + ".");
+                    }
+                } else {
+                    //What happens if the parent Id is again a compound Id; what will this method look like then? How do we link it to the correct property name?
+                    Method method = (Method) idAttribute.getJavaMember();
+                    method.setAccessible(Boolean.TRUE);
+                    try {
+                        for(String attributeName : jpaProvider.getIdentifierOrUniqueKeyEmbeddedPropertyNames(entityType,idAttribute.getName()))
+                        idMap.put(idAttribute.getName() + "." + attributeName, method.invoke(id));
+                    }
+                    catch (IllegalAccessException e) {
+                        throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                    }
+                    catch (InvocationTargetException e) {
+                        throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
+                                + id.getClass().getName() + ".");
+                    }
+                }
+            }
+        }
+
+        return idMap;
     }
 }

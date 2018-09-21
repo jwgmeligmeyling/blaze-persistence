@@ -19,6 +19,7 @@ package com.blazebit.persistence.view.impl.update.flush;
 import com.blazebit.persistence.CriteriaBuilder;
 import com.blazebit.persistence.CriteriaBuilderFactory;
 import com.blazebit.persistence.DeleteCriteriaBuilder;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.JpaProvider;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
@@ -100,7 +101,7 @@ public class UnmappedCollectionAttributeCascadeDeleter extends AbstractUnmappedA
     @Override
     public void removeByOwnerId(UpdateContext context, Object ownerId) {
         EntityViewManagerImpl evm = context.getEntityViewManager();
-        Map<String, Object> ownerIds = getIdNameValueMap(ownerEntityClass,ownerId,context.getEntityManager(),ownerIdAttributeNames);
+        Map<String, Object> ownerIds = JpaMetamodelUtils.getIdNameValueMap(ownerEntityClass,ownerId,context.getEntityManager().getMetamodel(),ownerIdAttributeNames);
         if (cascadeDeleteElement) {
             List<Object> elementIds;
             if (mappedByAttributeName == null) {

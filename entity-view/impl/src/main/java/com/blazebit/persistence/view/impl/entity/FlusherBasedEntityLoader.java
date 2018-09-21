@@ -80,57 +80,10 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
         return getReferenceOrLoad(context, id);
     }
 
-    public Map<String,Object> getIdNameValueMap(Class entityClass, Object id, EntityManager em){
-        @SuppressWarnings("unchecked")
-        Map<String, Object> idMap = new HashMap<>();
-        Set<SingularAttribute<?,?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(em.getMetamodel().entity(entityClass));
-        EntityType<?> entityType = em.getMetamodel().entity(entityClass);
-        //TODO: check whether the statement below really tells us that we have only a single Id.
-        if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.BASIC)||
-                entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.EMBEDDABLE))){
-            Iterator iterator = idAttributeSet.iterator();
-            if(!iterator.hasNext()){
-                throw new RuntimeException("The entity type" + entityClass.getName() + "does not have an Id!");
-            }
-
-            idMap.put(((SingularAttribute<?,?>) iterator.next()).getName(),id);
-
-            if (iterator.hasNext()){
-                throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
-                        + entityClass.getName() + "has more than one Id field!");
-            }
-        } else {
-            //Currently untested; probably need to copy EVMI.find code.
-//            for (Field field : Arrays.asList(id.getClass().getFields())){
-//                try {
-//                    ownerIds.put(field.getName(),field.get(id));
-//                } catch (IllegalAccessException e) {
-//                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
-//                }
-//
-//            }
-            for (SingularAttribute<?,?> idAttribute : idAttributeSet){
-                Method method = (Method) idAttribute.getJavaMember();
-                method.setAccessible(Boolean.TRUE);
-                try {
-                    idMap.put(idAttribute.getName(),method.invoke(id));
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException("Could not access field: " + method.getName() + ".");
-                }
-                catch (InvocationTargetException e) {
-                    throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
-                            + id.getClass().getName() + ".");
-                }
-            }
-        }
-        return idMap;
-    }
-
     @Override
     protected Object queryEntity(EntityManager em, Object id) {
         @SuppressWarnings("unchecked")
-        Map<String, Object> ownerIds = getIdNameValueMap(entityClass,id,em);
+        Map<String, Object> ownerIds = JpaMetamodelUtils.getIdNameValueMap(entityClass,id,em.getMetamodel());
         //TODO: create IdClass test, as idType will probably return null for that case.
         EntityType<?> entityType = em.getMetamodel().entity(entityClass);
         Query query = em.createQuery(getQueryString());

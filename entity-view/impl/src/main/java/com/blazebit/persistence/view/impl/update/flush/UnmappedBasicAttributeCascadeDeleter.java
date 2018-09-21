@@ -20,6 +20,7 @@ import com.blazebit.persistence.CriteriaBuilder;
 import com.blazebit.persistence.DeleteCriteriaBuilder;
 import com.blazebit.persistence.ReturningResult;
 import com.blazebit.persistence.parser.EntityMetamodel;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.ExtendedManagedType;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
@@ -118,7 +119,7 @@ public class UnmappedBasicAttributeCascadeDeleter extends AbstractUnmappedAttrib
         Object[] returnedValues = null;
         Object id = null;
         //TODO: figure out whether I should use ownerIdAttributeNames or elementIdAttributeNames below, and whether I should use the elementEntityClass or attempt to find the ownerEntityClass.
-        Map<String, Object> ownerIds = getIdNameValueMap(elementEntityClass,ownerId,context.getEntityManager(),ownerIdAttributeNames);
+        Map<String, Object> ownerIds = JpaMetamodelUtils.getIdNameValueMap(elementEntityClass,ownerId,context.getEntityManager().getMetamodel(),elementIdAttributeNames);
         if (requiresDeleteAsEntity) {
             CriteriaBuilder<?> cb = context.getEntityViewManager().getCriteriaBuilderFactory().create(context.getEntityManager(), elementEntityClass);
             //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!

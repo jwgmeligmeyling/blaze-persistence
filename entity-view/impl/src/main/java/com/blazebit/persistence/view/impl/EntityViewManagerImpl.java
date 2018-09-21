@@ -244,53 +244,8 @@ public class EntityViewManagerImpl implements EntityViewManager {
     public <T> T find(EntityManager entityManager, EntityViewSetting<T, CriteriaBuilder<T>> entityViewSetting, Object entityId) {
         ViewTypeImpl<T> managedViewType = metamodel.view(entityViewSetting.getEntityViewClass());
         EntityType<?> entityType = (EntityType<?>) managedViewType.getJpaManagedType();
-        Set<SingularAttribute<?, ?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(entityType);
         CriteriaBuilder<?> cb = cbf.create(entityManager, managedViewType.getEntityClass());
-        Map<String,Object> entityIdValues = new HashMap<>();
-        //TODO Hibernate returns null when getIdType it is called on an entityType which uses IdClass.
-        if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.BASIC)||
-                entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.EMBEDDABLE))){
-            Iterator iterator = idAttributeSet.iterator();
-            if(!iterator.hasNext()){
-                throw new RuntimeException("The entity type" + entityType.getName() + "does not have an Id!");
-                }
-
-            //I believe this approach also works for BigDecimal and the like? I have added that possibility in the check above.
-            entityIdValues.put(((SingularAttribute) iterator.next()).getName(),entityId);
-
-            if (iterator.hasNext()){
-                throw new RuntimeException("Could not match the given entityId to the entity type specified in the view: the entity type"
-                        + entityType.getName() + "has more than one Id field!");
-            }
-        } else {
-//            for (Field field : Arrays.asList(entityId.getClass().getDeclaredFields())){
-//                field.setAccessible(Boolean.TRUE);
-//                try {
-//                    entityIdValues.put(field.getName(),field.get(entityId));
-//                } catch (IllegalAccessException e) {
-//                    throw new IllegalStateException("Could not access field: "+field.getName()+".");
-//                }
-//            }
-//            entityIdValues.remove("serialVersionUID");
-            for (SingularAttribute<?,?> idAttribute : idAttributeSet){
-                Method method = (Method) idAttribute.getJavaMember();
-                method.setAccessible(Boolean.TRUE);
-                try {
-                    entityIdValues.put(idAttribute.getName(),method.invoke(entityId));
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException("Could not access field: " + method.getName() + ".");
-                }
-                catch (InvocationTargetException e) {
-                    throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
-                            + entityId.getClass().getName() + ".");
-                }
-//                for (Field field : Arrays.asList(idAttribute.getJavaType().getDeclaredFields())){
-//                    field.setAccessible(Boolean.TRUE);
-//                    basicIdAttributeNames.add(field.getName());
-//                }
-            }
-        }
+        Map<String, Object> entityIdValues = JpaMetamodelUtils.getIdNameValueMap(entityType.getJavaType(),entityId,entityManager.getMetamodel(),metamodel.getEntityMetamodel(),jpaProvider);
         for (Map.Entry<String, Object> entityIdValuesEntry : entityIdValues.entrySet()){
             cb.where(entityIdValuesEntry.getKey()).eq(entityIdValuesEntry.getValue());
         }

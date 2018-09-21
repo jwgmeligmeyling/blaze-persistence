@@ -38,6 +38,7 @@ import com.blazebit.persistence.view.impl.proxy.MutableStateTrackable;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
 import com.blazebit.persistence.view.spi.type.BasicUserType;
 import com.blazebit.persistence.view.spi.type.EntityViewProxy;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -519,7 +520,7 @@ public class CollectionAttributeFlusher<E, V extends Collection<?>> extends Abst
     private List<PostFlushDeleter> removeByOwnerId(UpdateContext context, Object ownerId, boolean cascade) {
         Set<String> elementDescriptorIdAttributeNames = elementDescriptor.getEntityIdAttributeNames();
         List<Tuple> tuples = new ArrayList<>();
-        Map<String, Object> ownerIds = getIdNameValueMap(ownerEntityClass,ownerId,context.getEntityManager());
+        Map<String, Object> ownerIds = JpaMetamodelUtils.getIdNameValueMap(ownerEntityClass,ownerId,context.getEntityManager().getMetamodel());
         EntityViewManagerImpl evm = context.getEntityViewManager();
         if (cascade) {
             List<Object> elementIds;
