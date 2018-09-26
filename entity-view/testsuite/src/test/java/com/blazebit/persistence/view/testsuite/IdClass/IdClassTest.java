@@ -29,6 +29,12 @@ public class IdClassTest extends AbstractEntityViewTest {
     }
 
     @Override
+    protected Class<?>[] getEntityClasses() {
+        return new Class<?>[]{
+                IdClassEntity.class};
+    }
+
+    @Override
     public void setUpOnce(){
         cleanDatabase();
         transactional(new TxVoidWork() {

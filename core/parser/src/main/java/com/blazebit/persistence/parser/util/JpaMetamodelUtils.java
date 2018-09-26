@@ -683,17 +683,8 @@ public class JpaMetamodelUtils {
                         + entityClass.getName() + "has more than one Id field!");
             }
         } else {
-            //Currently untested; probably need to copy EVMI.find code.
-//            for (Field field : Arrays.asList(id.getClass().getFields())){
-//                try {
-//                    ownerIds.put(field.getName(),field.get(id));
-//                } catch (IllegalAccessException e) {
-//                    throw new IllegalStateException("Cannot access id class property: " + e.getMessage(), e);
-//                }
-//
-//            }
             for (SingularAttribute<?,?> idAttribute : idAttributeSet){
-                if(entityMetamodel.getManagedType(ExtendedManagedType.class,entityClass).getAttribute(idAttribute.getName()).getAttribute().getPersistentAttributeType()==BASIC){
+                if(idAttribute.getPersistentAttributeType()==BASIC){
                     Method method = (Method) idAttribute.getJavaMember();
                     method.setAccessible(Boolean.TRUE);
                     try {

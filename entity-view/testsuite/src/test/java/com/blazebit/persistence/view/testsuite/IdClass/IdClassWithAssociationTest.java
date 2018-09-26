@@ -196,6 +196,139 @@ public class IdClassWithAssociationTest extends AbstractEntityViewTest {
 //        }
     }
 
+    @Entity
+    @Table(name = "deeply_dependent_id_class_entity")
+    @IdClass(DeeplyDependentIdClassEntityId.class)
+    public static class DeeplyDependentIdClassEntity implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private DependentIdClassEntity dependentIdClassEntity;
+        private String key3;
+        private Integer value;
+//        private Set<DependentIdClassEntity> children = new HashSet<>();
+
+        public DeeplyDependentIdClassEntity() {
+        }
+
+        public DeeplyDependentIdClassEntity(DependentIdClassEntity dependentIdClassEntity, String key3, Integer value) {
+            this.dependentIdClassEntity = dependentIdClassEntity;
+            this.key3 = key3;
+            this.value = value;
+        }
+
+        @Id
+        @ManyToOne
+        @JoinColumns({
+                @JoinColumn(name = "parentIdClassEntity", nullable = false),
+                @JoinColumn(name = "key2", nullable = false)})
+        public DependentIdClassEntity getDependentIdClassEntity() {
+            return dependentIdClassEntity;
+        }
+
+        public void setDependentIdClassEntity(DependentIdClassEntity dependentIdClassEntity) {
+            this.dependentIdClassEntity = dependentIdClassEntity;
+        }
+
+        @Id
+        @Column(name = "key3", nullable = false, length = 40)
+        public String getKey3() {
+            return key3;
+        }
+
+        public void setKey3(String key3) {
+            this.key3 = key3;
+        }
+
+        @Basic(optional = false)
+        @Column(name = "value", nullable = false)
+        public Integer getValue() {
+            return value;
+        }
+
+        public void setValue(Integer value) {
+            this.value = value;
+        }
+
+//        @ManyToMany
+//        @JoinTable(name = "dependent_id_class_entity_children", joinColumns = {
+//                @JoinColumn(name = "child_parentIdClassEntity", nullable = false, referencedColumnName = "parentIdClassEntity"),
+//                @JoinColumn(name = "child_key2", nullable = false, referencedColumnName = "key2")
+//        }, inverseJoinColumns = {
+//                @JoinColumn(name = "parent_parentIdClassEntity", nullable = false, referencedColumnName = "parentIdClassEntity"),
+//                @JoinColumn(name = "parent_key2", nullable = false, referencedColumnName = "key2")
+//        })
+//        public Set<DependentIdClassEntity> getChildren() {
+//            return children;
+//        }
+//
+//        public void setChildren(Set<DependentIdClassEntity> children) {
+//            this.children = children;
+//        }
+    }
+
+    public static class DeeplyDependentIdClassEntityId implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private DependentIdClassEntityId dependentIdClassEntity;
+        private String key3;
+
+        public DeeplyDependentIdClassEntityId() {
+        }
+
+        public DeeplyDependentIdClassEntityId(DependentIdClassEntityId dependentIdClassEntity, String key3) {
+            this.dependentIdClassEntity = dependentIdClassEntity;
+            this.key3 = key3;
+        }
+
+        public DependentIdClassEntityId getDependentIdClassEntity() {
+            return dependentIdClassEntity;
+        }
+
+        public void setDependentIdClassEntity(DependentIdClassEntityId dependentIdClassEntity) {
+            this.dependentIdClassEntity = dependentIdClassEntity;
+        }
+
+        public String getKey3() {
+            return key3;
+        }
+
+        public void setKey3(String key3) {
+            this.key3 = key3;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            DeeplyDependentIdClassEntityId that = (DeeplyDependentIdClassEntityId) o;
+
+            if (dependentIdClassEntity != null ? !dependentIdClassEntity.equals(that.dependentIdClassEntity) : that.dependentIdClassEntity != null) {
+                return false;
+            }
+            return key3 != null ? key3.equals(that.key3) : that.key3 == null;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = dependentIdClassEntity != null ? dependentIdClassEntity.hashCode() : 0;
+            result = 31 * result + (key3 != null ? key3.hashCode() : 0);
+            return result;
+        }
+    }
+
+    @EntityView(DeeplyDependentIdClassEntity.class)
+    public interface DeeplyDependentIdClassEntityView {
+        @IdMapping("dependentIdClassEntity")
+        DependentIdClassEntity getDependentIdClassEntity();
+        @IdMapping("key3")
+        String getKey3();
+    }
+
     @EntityView(DependentIdClassEntity.class)
     public interface DependentIdClassEntityView {
         @IdMapping("parentIdClassEntity")
@@ -216,7 +349,8 @@ public class IdClassWithAssociationTest extends AbstractEntityViewTest {
         return new Class<?>[]{
                 IdClassEntity.class,
                 ParentIdClassEntity.class,
-                DependentIdClassEntity.class};
+                DependentIdClassEntity.class,
+                DeeplyDependentIdClassEntity.class};
     }
 
     @Override
@@ -233,6 +367,10 @@ public class IdClassWithAssociationTest extends AbstractEntityViewTest {
                 em.persist(d1);
                 DependentIdClassEntity d2 = new DependentIdClassEntity(p2,"b",22);
                 em.persist(d2);
+                DeeplyDependentIdClassEntity dd1 = new DeeplyDependentIdClassEntity(d1,"alpha",31);
+                em.persist(dd1);
+                DeeplyDependentIdClassEntity dd2 = new DeeplyDependentIdClassEntity(d1,"beta",32);
+                em.persist(dd2);
                 em.flush();
             }
         });
@@ -253,5 +391,24 @@ public class IdClassWithAssociationTest extends AbstractEntityViewTest {
         Assert.assertEquals("a",dependentIdClassEntityView1.getKey2());
         Assert.assertEquals(Integer.valueOf(12),dependentIdClassEntityView2.getParentIdClassEntity().getValue());
         Assert.assertEquals("b",dependentIdClassEntityView2.getKey2());
+    }
+
+    @Test
+    public void idClassWithDeepAssociationIdTest(){
+        build(DeeplyDependentIdClassEntityView.class, DependentIdClassEntityView.class, ParentIdClassEntityView.class);
+
+        EntityViewSetting<DeeplyDependentIdClassEntityView, CriteriaBuilder<DeeplyDependentIdClassEntityView>> setting = EntityViewSetting.create(DeeplyDependentIdClassEntityView.class);
+        DependentIdClassEntityId id1 = new DependentIdClassEntityId(1,"a");
+        DependentIdClassEntityId id2 = new DependentIdClassEntityId(2,"b");
+        DeeplyDependentIdClassEntityId idd1 = new DeeplyDependentIdClassEntityId(id1,"alpha");
+        DeeplyDependentIdClassEntityId idd2 = new DeeplyDependentIdClassEntityId(id2,"beta");
+
+        DeeplyDependentIdClassEntityView deeplyDependentIdClassEntityView1 = evm.find(em,setting,idd1);
+        DeeplyDependentIdClassEntityView deeplyDependentIdClassEntityView2 = evm.find(em,setting,idd2);
+
+        Assert.assertEquals(Integer.valueOf(21),deeplyDependentIdClassEntityView1.getDependentIdClassEntity().getValue());
+        Assert.assertEquals("alpha",deeplyDependentIdClassEntityView1.getKey3());
+        Assert.assertEquals(Integer.valueOf(22),deeplyDependentIdClassEntityView2.getDependentIdClassEntity().getValue());
+        Assert.assertEquals("beta",deeplyDependentIdClassEntityView2.getKey3());
     }
 }
