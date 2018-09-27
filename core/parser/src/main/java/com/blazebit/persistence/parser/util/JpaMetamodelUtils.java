@@ -20,6 +20,7 @@ import com.blazebit.persistence.parser.AttributePath;
 import com.blazebit.persistence.parser.EntityMetamodel;
 import com.blazebit.persistence.parser.ListIndexAttribute;
 import com.blazebit.persistence.parser.MapKeyAttribute;
+import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.ExtendedManagedType;
 import com.blazebit.persistence.spi.JpaProvider;
 import com.blazebit.reflection.ReflectionUtils;
@@ -667,6 +668,7 @@ public class JpaMetamodelUtils {
         Map<String, Object> idMap = new HashMap<>();
         Set<SingularAttribute<?,?>> idAttributeSet = JpaMetamodelUtils.getIdAttributes(metamodel.entity(entityClass));
         EntityType<?> entityType = metamodel.entity(entityClass);
+        ExtendedManagedType<?> extendedEntityType = entityMetamodel.getManagedType(ExtendedManagedType.class,entityClass);
         //TODO: check whether the statement below really tells us that we have only a single Id.
         //TODO Hibernate returns null when getIdType it is called on an entityType which uses IdClass.
         if(entityType.getIdType()!=null && (entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.BASIC)||
@@ -698,24 +700,59 @@ public class JpaMetamodelUtils {
                                 + id.getClass().getName() + ".");
                     }
                 } else {
-                    //What happens if the parent Id is again a compound Id; what will this method look like then? How do we link it to the correct property name?
-                    Method method = (Method) idAttribute.getJavaMember();
-                    method.setAccessible(Boolean.TRUE);
-                    try {
-                        for(String attributeName : jpaProvider.getIdentifierOrUniqueKeyEmbeddedPropertyNames(entityType,idAttribute.getName()))
-                        idMap.put(idAttribute.getName() + "." + attributeName, method.invoke(id));
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new IllegalStateException("Could not access field: " + method.getName() + ".");
-                    }
-                    catch (InvocationTargetException e) {
-                        throw new IllegalStateException("Method "+method.getName() + " could not be invoked on target class "
-                                + id.getClass().getName() + ".");
-                    }
+                    ExtendedAttribute<?, ?> embeddedAttribute = extendedEntityType.getAttribute(idAttribute.getName());
+                    beginDatLoop(id, jpaProvider, idMap, embeddedAttribute, entityMetamodel.getManagedType(ExtendedManagedType.class,entityClass),idAttribute.getName(), metamodel,embeddedAttribute.getElementClass());
                 }
             }
         }
 
         return idMap;
+    }
+
+    private static void beginDatLoop(Object id, JpaProvider jpaProvider, Map<String, Object> idMap, ExtendedAttribute<?, ?> idAttribute,
+                                     ExtendedManagedType<?> extendedManagedType, String idAttributePath, Metamodel metamodel, Class entityClass) {
+        EntityType<?> entityType = metamodel.entity(entityClass);
+        if (entityType.getIdType() != null && (!idAttribute.getAttribute().isAssociation() ||
+                entityType.getIdType().getPersistenceType().equals(Type.PersistenceType.EMBEDDABLE))) {
+            idMap.put(idAttributePath, id);
+        } else {
+            Method method = (Method) idAttribute.getAttribute().getJavaMember();
+            method.setAccessible(Boolean.TRUE);
+            List<String> embeddedAttributeNames = jpaProvider.getIdentifierOrUniqueKeyEmbeddedPropertyNames((EntityType) extendedManagedType.getType(), idAttributePath + "."+idAttribute.getAttribute().getName());
+            for (String attributeName : embeddedAttributeNames) {
+                String nestedAttributePath = idAttributePath + "." + attributeName;
+                ExtendedAttribute<?, ?> embeddedAttribute = extendedManagedType.getAttribute(nestedAttributePath);
+
+                if (embeddedAttribute.getAttribute().isAssociation()) {
+                    try {
+
+                        Object nestedId = method.invoke(id);
+                        beginDatLoop(nestedId, jpaProvider, idMap, embeddedAttribute, extendedManagedType, nestedAttributePath, metamodel, embeddedAttribute.getElementClass());
+
+                    } catch (IllegalAccessException e) {
+                        throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                    } catch (InvocationTargetException e) {
+                        throw new IllegalStateException("Method " + method.getName() + " could not be invoked on target class "
+                                + id.getClass().getName() + ".");
+                    }
+
+                } else {
+
+                    Method embeddedMethod = (Method) embeddedAttribute.getAttribute().getJavaMember();
+                    embeddedMethod.setAccessible(Boolean.TRUE);
+
+                    try {
+
+                        idMap.put(nestedAttributePath, method.invoke(id));
+
+                    } catch (IllegalAccessException e) {
+                        throw new IllegalStateException("Could not access field: " + method.getName() + ".");
+                    } catch (InvocationTargetException e) {
+                        throw new IllegalStateException("Method " + method.getName() + " could not be invoked on target class "
+                                + id.getClass().getName() + ".");
+                    }
+                }
+            }
+        }
     }
 }
