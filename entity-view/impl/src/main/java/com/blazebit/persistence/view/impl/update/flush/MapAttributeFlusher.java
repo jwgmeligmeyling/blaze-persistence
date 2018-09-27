@@ -16,7 +16,9 @@
 
 package com.blazebit.persistence.view.impl.update.flush;
 
+import com.blazebit.persistence.CriteriaBuilder;
 import com.blazebit.persistence.DeleteCriteriaBuilder;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.view.FlushStrategy;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
 import com.blazebit.persistence.view.impl.accessor.AttributeAccessor;
@@ -40,15 +42,8 @@ import com.blazebit.persistence.view.spi.type.EntityViewProxy;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  *
@@ -68,10 +63,10 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
     private final BasicDirtyChecker<Object> keyDirtyChecker;
 
     @SuppressWarnings("unchecked")
-    public MapAttributeFlusher(String attributeName, String mapping, Class<?> ownerEntityClass, String ownerIdAttributeName, FlushStrategy flushStrategy, AttributeAccessor attributeMapper, InitialValueAttributeAccessor viewAttributeAccessor, boolean optimisticLockProtected, boolean collectionUpdatable,
+    public MapAttributeFlusher(String attributeName, String mapping, Class<?> ownerEntityClass, Set<String> ownerIdAttributeNames, FlushStrategy flushStrategy, AttributeAccessor attributeMapper, InitialValueAttributeAccessor viewAttributeAccessor, boolean optimisticLockProtected, boolean collectionUpdatable,
                                CollectionRemoveListener keyCascadeDeleteListener, CollectionRemoveListener elementCascadeDeleteListener, CollectionRemoveListener keyRemoveListener, CollectionRemoveListener elementRemoveListener,
                                boolean viewOnlyDeleteCascaded, boolean jpaProviderDeletesCollection, TypeDescriptor keyDescriptor, TypeDescriptor elementDescriptor, MapViewToEntityMapper mapper, MapViewToEntityMapper loadOnlyMapper, MapInstantiator<?, ?> mapInstantiator) {
-        super(attributeName, mapping, collectionUpdatable || elementDescriptor.isMutable(), ownerEntityClass, ownerIdAttributeName, flushStrategy, attributeMapper, viewAttributeAccessor, optimisticLockProtected, collectionUpdatable, viewOnlyDeleteCascaded, jpaProviderDeletesCollection, elementCascadeDeleteListener, elementRemoveListener, elementDescriptor);
+        super(attributeName, mapping, collectionUpdatable || elementDescriptor.isMutable(), ownerEntityClass, ownerIdAttributeNames, flushStrategy, attributeMapper, viewAttributeAccessor, optimisticLockProtected, collectionUpdatable, viewOnlyDeleteCascaded, jpaProviderDeletesCollection, elementCascadeDeleteListener, elementRemoveListener, elementDescriptor);
         this.mapInstantiator = mapInstantiator;
         this.keyDescriptor = keyDescriptor;
         if (keyDescriptor.isSubview() || keyDescriptor.isJpaEntity()) {
@@ -534,28 +529,42 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
 
     private List<PostFlushDeleter> removeByOwnerId(UpdateContext context, Object ownerId, boolean cascade) {
         EntityViewManagerImpl evm = context.getEntityViewManager();
+        Map<String,Object> ownerIds = JpaMetamodelUtils.getIdNameValueMap(ownerEntityClass,ownerId,context.getEntityManager().getMetamodel());
+
         if (cascade) {
             List<Object> elementIds;
             // If there is no inverseFlusher/mapped by attribute, the collection has a join table
             if (evm.getDbmsDialect().supportsReturningColumns()) {
-                List<Tuple> tuples = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName)
-                        .where(ownerIdAttributeName).eq(ownerId)
-                        .executeWithReturning(attributeName + "." + elementDescriptor.getEntityIdAttributeName())
-                        .getResultList();
+                DeleteCriteriaBuilder<?> deleteCriteriaBuilder = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
+                List<String> returningAttributes = new ArrayList<>();
+                for (String ownerIdAttributeName : ownerIdAttributeNames){
+                    deleteCriteriaBuilder.where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
+                    returningAttributes.add(attributeName + "." + ownerIdAttributeName);
+                }
+
+                List<Tuple> tuples = deleteCriteriaBuilder.executeWithReturning(returningAttributes.toArray(new String[returningAttributes.size()])).getResultList();
 
                 elementIds = new ArrayList<>(tuples.size());
                 for (Tuple tuple : tuples) {
                     elementIds.add(tuple.get(0));
                 }
             } else {
-                elementIds = (List<Object>) evm.getCriteriaBuilderFactory().create(context.getEntityManager(), ownerEntityClass, "e")
-                        .where(ownerIdAttributeName).eq(ownerId)
-                        .select("e." + attributeName + "." + elementDescriptor.getEntityIdAttributeName())
-                        .getResultList();
+                CriteriaBuilder<?> criteriaBuilder = evm.getCriteriaBuilderFactory().create(context.getEntityManager(), ownerEntityClass, "e");
+                for(String ownerIdAttributeName : ownerIdAttributeNames){
+                     criteriaBuilder
+                             .where(ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
+                }
+                for (String elementDescriptorIdAttributeName : elementDescriptor.getEntityIdAttributeNames()){
+                    criteriaBuilder.select("e." + attributeName + "." + elementDescriptorIdAttributeName);
+                }
+
+                elementIds = (List<Object>) criteriaBuilder.getResultList();
                 if (!elementIds.isEmpty() && !jpaProviderDeletesCollection) {
                     // We must always delete this, otherwise we might get a constraint violation because of the cascading delete
                     DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
-                    cb.where(ownerIdAttributeName).eq(ownerId);
+                    for(String ownerIdAttributeName : ownerIdAttributeNames){
+                        cb.where(ownerIdAttributeName).eq(ownerId);
+                    }
                     cb.executeUpdate();
                 }
             }
@@ -564,7 +573,9 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
         } else if (!jpaProviderDeletesCollection) {
             // delete from Entity(collectionRole) e where e.id = :id
             DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), ownerEntityClass, "e", attributeName);
-            cb.where("e." + ownerIdAttributeName).eq(ownerId);
+            for(String ownerIdAttributeName : ownerIdAttributeNames){
+                cb.where("e." + ownerIdAttributeName).eq(ownerIds.get(ownerIdAttributeName));
+            }
             cb.executeUpdate();
         }
 

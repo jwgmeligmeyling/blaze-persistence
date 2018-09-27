@@ -135,6 +135,10 @@ public class ConvertedViewType<X> implements ViewTypeImplementor<X> {
         return delegate.getIdAttribute();
     }
 
+    public Set<MethodAttribute<? super X, ?>> getIdAttributes() {
+        return delegate.getIdAttributes();
+    }
+
     @Override
     public MethodAttribute<? super X, ?> getVersionAttribute() {
         return delegate.getVersionAttribute();

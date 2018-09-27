@@ -16,8 +16,10 @@
 
 package com.blazebit.persistence.view.impl.update.flush;
 
+import com.blazebit.persistence.CriteriaBuilder;
 import com.blazebit.persistence.DeleteCriteriaBuilder;
 import com.blazebit.persistence.parser.EntityMetamodel;
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.ExtendedManagedType;
 import com.blazebit.persistence.view.OptimisticLockException;
@@ -34,7 +36,6 @@ import com.blazebit.persistence.view.impl.entity.ViewToEntityMapper;
 import com.blazebit.persistence.view.impl.mapper.Mapper;
 import com.blazebit.persistence.view.impl.mapper.Mappers;
 import com.blazebit.persistence.view.impl.metamodel.AbstractMethodAttribute;
-import com.blazebit.persistence.view.metamodel.SingularAttribute;
 import com.blazebit.persistence.view.spi.type.EntityViewProxy;
 import com.blazebit.persistence.view.impl.update.EntityViewUpdaterImpl;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
@@ -43,9 +44,14 @@ import com.blazebit.persistence.view.metamodel.PluralAttribute;
 import com.blazebit.persistence.view.metamodel.Type;
 import com.blazebit.persistence.view.metamodel.ViewType;
 
+import javax.persistence.EntityManager;
 import javax.persistence.Query;
-import java.util.Collections;
-import java.util.List;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.SingularAttribute;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
 
 /**
  *
@@ -56,7 +62,7 @@ public final class InverseFlusher<E> {
 
     private final Class<?> parentEntityClass;
     private final String attributeName;
-    private final String parentIdAttributeName;
+    private final Set<String> parentIdAttributeNames;
     private final String childIdAttributeName;
     private final UnmappedAttributeCascadeDeleter deleter;
     // Maps the parent view object to an entity via means of em.getReference
@@ -78,13 +84,13 @@ public final class InverseFlusher<E> {
     private final Mapper<E, Object> parentEntityOnChildEntityMapper;
     private final InverseEntityToEntityMapper childEntityToEntityMapper;
 
-    public InverseFlusher(Class<?> parentEntityClass, String attributeName, String parentIdAttributeName, String childIdAttributeName, UnmappedAttributeCascadeDeleter deleter,
+    public InverseFlusher(Class<?> parentEntityClass, String attributeName, Set<String> parentIdAttributeNames, String childIdAttributeName, UnmappedAttributeCascadeDeleter deleter,
                           ViewToEntityMapper parentReferenceViewToEntityMapper, DirtyAttributeFlusher<?, E, Object> parentReferenceAttributeFlusher,
                           Mapper<E, Object> parentEntityOnChildViewMapper, InverseViewToEntityMapper childViewToEntityMapper, ViewToEntityMapper childReferenceViewToEntityMapper,
                           Mapper<E, Object> parentEntityOnChildEntityMapper, InverseEntityToEntityMapper childEntityToEntityMapper) {
         this.parentEntityClass = parentEntityClass;
         this.attributeName = attributeName;
-        this.parentIdAttributeName = parentIdAttributeName;
+        this.parentIdAttributeNames = parentIdAttributeNames;
         this.childIdAttributeName = childIdAttributeName;
         this.deleter = deleter;
         this.parentReferenceViewToEntityMapper = parentReferenceViewToEntityMapper;
@@ -99,7 +105,7 @@ public final class InverseFlusher<E> {
     public static <E> InverseFlusher<E> forAttribute(EntityViewManagerImpl evm, ManagedViewType<?> viewType, AbstractMethodAttribute<?, ?> attribute, TypeDescriptor childTypeDescriptor) {
         if (attribute.getMappedBy() != null) {
             String attributeLocation = attribute.getLocation();
-            Type<?> elementType = attribute instanceof PluralAttribute<?, ?, ?> ? ((PluralAttribute<?, ?, ?>) attribute).getElementType() : ((SingularAttribute<?, ?>) attribute).getType();
+            Type<?> elementType = attribute instanceof PluralAttribute<?, ?, ?> ? ((PluralAttribute<?, ?, ?>) attribute).getElementType() : ((com.blazebit.persistence.view.metamodel.SingularAttribute<?, ?>) attribute).getType();
             Class<?> elementEntityClass = null;
 
             AttributeAccessor parentReferenceAttributeAccessor = null;
@@ -206,21 +212,27 @@ public final class InverseFlusher<E> {
             );
 
             UnmappedAttributeCascadeDeleter deleter = null;
-            String parentIdAttributeName = null;
+            Set<SingularAttribute<?,?>> parentIdAttributes = Collections.EMPTY_SET;
+            Set<String> parentIdAttributeNamesWithMapping = new HashSet<>();
+            Set<String> parentIdAttributeNames = new HashSet<>();
             String childIdAttributeName = null;
             // Only construct when orphanRemoval or delete cascading is enabled, orphanRemoval implies delete cascading
             if (attribute.isDeleteCascaded()) {
                 EntityMetamodel entityMetamodel = evm.getMetamodel().getEntityMetamodel();
                 ExtendedManagedType elementManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, elementEntityClass);
-                parentIdAttributeName = entityMetamodel.getManagedType(ExtendedManagedType.class, viewType.getEntityClass()).getIdAttribute().getName();
+                String mapping = attribute.getMappedBy();
+                parentIdAttributes = entityMetamodel.getManagedType(ExtendedManagedType.class, viewType.getEntityClass()).getIdAttributes();
+                for(SingularAttribute parentIdAttribute : parentIdAttributes){
+                    parentIdAttributeNamesWithMapping.add(mapping + "." + parentIdAttribute.getName());
+                    parentIdAttributeNames.add(parentIdAttribute.getName());
+                }
                 childIdAttributeName = elementManagedType.getIdAttribute().getName();
 
-                String mapping = attribute.getMappedBy();
                 ExtendedAttribute extendedAttribute = elementManagedType.getAttribute(mapping);
                 if (childTypeDescriptor.isSubview()) {
                     deleter = new ViewTypeCascadeDeleter(childTypeDescriptor.getViewToEntityMapper());
                 } else if (childTypeDescriptor.isJpaEntity()) {
-                    deleter = new UnmappedBasicAttributeCascadeDeleter(evm, mapping, extendedAttribute, mapping + "." + parentIdAttributeName, false);
+                    deleter = new UnmappedBasicAttributeCascadeDeleter(evm, mapping, extendedAttribute, parentIdAttributeNamesWithMapping, false);
                 }
             }
 
@@ -248,7 +260,7 @@ public final class InverseFlusher<E> {
             return new InverseFlusher(
                     viewType.getEntityClass(),
                     attribute.getMapping(),
-                    parentIdAttributeName,
+                    parentIdAttributes,
                     childIdAttributeName,
                     deleter,
                     parentReferenceViewToEntityMapper,
@@ -265,16 +277,24 @@ public final class InverseFlusher<E> {
     }
 
     public List<PostFlushDeleter> removeByOwnerId(UpdateContext context, Object ownerId) {
+        //TODO: check whether it is correct that everything here is denoted with ``parent"  instead of ``owner".
+        Map<String, Object> ownerIds = JpaMetamodelUtils.getIdNameValueMap(parentEntityClass,ownerId,context.getEntityManager().getMetamodel());
         EntityViewManagerImpl evm = context.getEntityViewManager();
-        List<Object> elementIds = (List<Object>) evm.getCriteriaBuilderFactory().create(context.getEntityManager(), parentEntityClass, "e")
-                .where(parentIdAttributeName).eq(ownerId)
-                .select("e." + attributeName + "." + childIdAttributeName)
+        CriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().create(context.getEntityManager(), parentEntityClass, "e");
+        for(String parentIdAttributeName : parentIdAttributeNames){
+            //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
+            cb.where(parentIdAttributeName).eq(ownerIds.get(parentIdAttributeName));
+        }
+        List<Object> elementIds = (List<Object>) cb.select("e." + attributeName + "." + childIdAttributeName)
                 .getResultList();
         if (!elementIds.isEmpty()) {
             // We must always delete this, otherwise we might get a constraint violation because of the cascading delete
-            DeleteCriteriaBuilder<?> cb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), parentEntityClass, "e", attributeName);
-            cb.where(parentIdAttributeName).eq(ownerId);
-            cb.executeUpdate();
+            DeleteCriteriaBuilder<?> dcb = evm.getCriteriaBuilderFactory().deleteCollection(context.getEntityManager(), parentEntityClass, "e", attributeName);
+            for(String parentIdAttributeName : parentIdAttributeNames){
+                //TODO: add exception for when the set ownerIdAttributeNames and ownerIds.keySet() do not match in size!
+                dcb.where(parentIdAttributeName).eq(ownerIds.get(parentIdAttributeName));
+            }
+            dcb.executeUpdate();
         }
 
         return Collections.<PostFlushDeleter>singletonList(new PostFlushInverseCollectionElementByIdDeleter(deleter, elementIds));

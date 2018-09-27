@@ -74,6 +74,10 @@
             <version>0.7.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.blazebit</groupId>
+            <artifactId>blaze-persistence-core-api</artifactId>
+        </dependency>
     </dependencies>
     
     <build>

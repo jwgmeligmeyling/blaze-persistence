@@ -95,15 +95,7 @@ import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.IdentifiableType;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.SingularAttribute;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  *
@@ -147,6 +139,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
             this.rootUpdateAllowed = true;
             viewIdAccessor = Accessors.forViewId(evm, (ViewType<?>) viewType, false);
             com.blazebit.persistence.view.metamodel.SingularAttribute<?, ?> viewIdAttribute = (com.blazebit.persistence.view.metamodel.SingularAttribute<?, ?>) view.getIdAttribute();
+            //TODO create an IdClass test which uses a subview. Note that the getAttributes() method below has to be changed.
             if (view.getIdAttribute().isSubview()) {
                 ManagedViewTypeImplementor<?> viewIdType = (ManagedViewTypeImplementor<?>) viewIdAttribute.getType();
                 boolean updateMappable = isUpdateMappable((Set) viewIdType.getAttributes());
@@ -190,24 +183,45 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
         this.fullEntityLoader = mutable ? new FullEntityLoader(evm, viewType) : null;
 
         Set<MethodAttribute<?, ?>> attributes = (Set<MethodAttribute<?, ?>>) (Set<?>) viewType.getAttributes();
-        String idAttributeName = null;
-        javax.persistence.metamodel.SingularAttribute<?, ?> jpaIdAttribute = null;
-        AbstractMethodAttribute<?, ?> idAttribute;
+        Set<String> idAttributeNames = new HashSet<>();
+        Set<String> mappings = new HashSet<>();
+        Set<SingularAttribute<?, ?>> jpaIdAttributes = new HashSet<>();
+        Set<AbstractMethodAttribute<?, ?>> idAttributes = Collections.emptySet();
         AbstractMethodAttribute<?, ?> versionAttribute;
 
         if (viewType instanceof ViewType<?>) {
-            idAttribute = (AbstractMethodAttribute<?, ?>) ((ViewType) viewType).getIdAttribute();
+            idAttributes = (Set<AbstractMethodAttribute<?, ?>>) ((ViewType) viewType).getIdAttributes();
             versionAttribute = (AbstractMethodAttribute<?, ?>) ((ViewType) viewType).getVersionAttribute();
             versionFlusher = versionAttribute != null ? createVersionFlusher(evm, entityType, versionAttribute) : null;
-            jpaIdAttribute = JpaMetamodelUtils.getSingleIdAttribute(entityMetamodel.entity(entityClass));
-            idAttributeName = jpaIdAttribute.getName();
-            String mapping = idAttribute.getMapping();
+            jpaIdAttributes = JpaMetamodelUtils.getIdAttributes(entityMetamodel.entity(entityClass));
+
+            for(SingularAttribute<?,?> jpaIdAttribute : jpaIdAttributes){
+                idAttributeNames.add(jpaIdAttribute.getName());
+            }
+
+            for(AbstractMethodAttribute<?,?> idAttribute : idAttributes){
+                mappings.add(idAttribute.getMapping());
+            }
+
             // Read only entity views don't have this restriction
-            if ((viewType.isCreatable() || viewType.isUpdatable()) && !mapping.equals(jpaIdAttribute.getName())) {
-                throw new IllegalArgumentException("Expected JPA id attribute [" + jpaIdAttribute.getName() + "] to match the entity view id attribute mapping [" + mapping + "] but it didn't!");
+            if ((viewType.isCreatable() || viewType.isUpdatable()) && !idAttributeNames.containsAll(mappings) && !mappings.containsAll(idAttributeNames)) {
+                StringBuilder jpaNames = new StringBuilder();
+                StringBuilder mappingNames = new StringBuilder();
+
+                for(SingularAttribute<?,?> jpaIdAttribute : jpaIdAttributes){
+                    jpaNames.append(jpaIdAttribute.getName()).append(", ");
+                }
+                jpaNames.setLength(jpaNames.length()-", ".length());
+
+                for(String mapping : mappings){
+                    mappingNames.append(mapping).append(", ");
+                }
+                mappingNames.setLength(mappingNames.length()-", ".length());
+
+                throw new IllegalArgumentException("Expected JPA id attribute [" + jpaNames.toString() + "] to match the entity view id attribute mapping [" + mappings.toString() + "] but it didn't!");
             }
         } else {
-            idAttribute = null;
+            idAttributes = Collections.EMPTY_SET;
             versionAttribute = null;
             versionFlusher = null;
         }
@@ -220,7 +234,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
         StringBuilder sb = null;
         int clauseEndIndex = -1;
 
-        if (mutable && flushStrategy != FlushStrategy.ENTITY && jpaIdAttribute != null) {
+        if (mutable && flushStrategy != FlushStrategy.ENTITY &&!jpaIdAttributes.isEmpty()) {
             this.updatePrefixString = "UPDATE " + entityType.getName() + " e SET ";
             StringBuilder tmpSb = new StringBuilder();
             tmpSb.append(" WHERE ");
@@ -251,8 +265,10 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
         UnmappedAttributeCascadeDeleter[][] flusherWiseCascadeDeleteUnmappedFlushers = null;
         // Exclude it and version attributes from unmapped attributes as they can't have join tables
         Map<String, ExtendedAttribute> joinTableUnmappedEntityAttributes = new TreeMap<>(entityMetamodel.getManagedType(ExtendedManagedType.class, entityClass).getAttributes());
-        if (jpaIdAttribute != null) {
-            joinTableUnmappedEntityAttributes.remove(jpaIdAttribute.getName());
+        if (!jpaIdAttributes.isEmpty()) {
+            for(SingularAttribute<?,?> jpaIdAttribute : jpaIdAttributes){
+                joinTableUnmappedEntityAttributes.remove(jpaIdAttribute.getName());
+            }
         }
         if (versionAttribute != null) {
             joinTableUnmappedEntityAttributes.remove(versionAttribute.getMapping());
@@ -262,7 +278,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
         if (mutable || entityType == null) {
             // Create flushers for mapped attributes
             for (MethodAttribute<?, ?> attribute : attributes) {
-                if (attribute == idAttribute || attribute == versionAttribute) {
+                if (idAttributes.contains(attribute) || attribute == versionAttribute) {
                     continue;
                 }
                 AbstractMethodAttribute<?, ?> methodAttribute = (AbstractMethodAttribute<?, ?>) attribute;
@@ -275,7 +291,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                 if (methodAttribute.getMapping() != null) {
                     joinTableUnmappedEntityAttributes.remove(methodAttribute.getMapping());
                 }
-                DirtyAttributeFlusher flusher = createAttributeFlusher(evm, viewType, idAttributeName, flushStrategy, methodAttribute);
+                DirtyAttributeFlusher flusher = createAttributeFlusher(evm, viewType,idAttributeNames, flushStrategy, methodAttribute);
                 if (flusher != null) {
                     if (sb != null) {
                         int endIndex = sb.length();
@@ -331,12 +347,12 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                 UnmappedAttributeCascadeDeleter deleter;
                 if (extendedAttribute.getAttribute().isCollection()) {
                     if (((javax.persistence.metamodel.PluralAttribute<?, ?, ?>) extendedAttribute.getAttribute()).getCollectionType() == javax.persistence.metamodel.PluralAttribute.CollectionType.MAP) {
-                        deleter = new UnmappedMapAttributeCascadeDeleter(evm, unmappedAttributeName, extendedAttribute, entityClass, idAttributeName, false);
+                        deleter = new UnmappedMapAttributeCascadeDeleter(evm, unmappedAttributeName, extendedAttribute, entityClass, idAttributeNames, false);
                     } else {
-                        deleter = new UnmappedCollectionAttributeCascadeDeleter(evm, unmappedAttributeName, extendedAttribute, entityClass, idAttributeName, false);
+                        deleter = new UnmappedCollectionAttributeCascadeDeleter(evm, unmappedAttributeName, extendedAttribute, entityClass, idAttributeNames, false);
                     }
                 } else {
-                    deleter = new UnmappedBasicAttributeCascadeDeleter(evm, unmappedAttributeName, extendedAttribute, idAttributeName, false);
+                    deleter = new UnmappedBasicAttributeCascadeDeleter(evm, unmappedAttributeName, extendedAttribute, idAttributeNames, false);
                 }
 
                 cascadeDeleteUnmappedFlusherList.add(deleter);
@@ -365,7 +381,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                 viewType.getJpaManagedType(),
                 persistable,
                 persistViewMapper,
-                jpaIdAttribute,
+                jpaIdAttributes,
                 evm.getEntityIdAccessor(),
                 viewIdMapper,
                 viewIdAccessor,
@@ -380,7 +396,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                 viewType.getFlushMode(),
                 flushStrategy
         );
-        if (mutable && flushStrategy != FlushStrategy.ENTITY && jpaIdAttribute != null && clauseEndIndex != sb.length()) {
+        if (mutable && flushStrategy != FlushStrategy.ENTITY && !jpaIdAttributes.isEmpty() && clauseEndIndex != sb.length()) {
             if (clauseEndIndex + 2 == sb.length()) {
                 // Remove the last comma
                 sb.setLength(clauseEndIndex);
@@ -685,7 +701,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
     }
 
     @SuppressWarnings({"unchecked", "checkstyle:methodlength"})
-    private static DirtyAttributeFlusher createAttributeFlusher(EntityViewManagerImpl evm, ManagedViewTypeImplementor<?> viewType, String idAttributeName, FlushStrategy flushStrategy, AbstractMethodAttribute<?, ?> attribute) {
+    private static DirtyAttributeFlusher createAttributeFlusher(EntityViewManagerImpl evm, ManagedViewTypeImplementor<?> viewType, Set<String> idAttributeNames, FlushStrategy flushStrategy, AbstractMethodAttribute<?, ?> attribute) {
         EntityMetamodel entityMetamodel = evm.getMetamodel().getEntityMetamodel();
         Class<?> entityClass = viewType.getEntityClass();
         String attributeName = attribute.getName();
@@ -709,7 +725,8 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
             CollectionRemoveListener elementCascadeDeleteListener = createCascadeDeleteListener(attribute, elementDescriptor);
             boolean jpaProviderDeletesCollection;
 
-            if (elementDescriptor.getEntityIdAttributeName() != null) {
+            //TODO: figure out if we should also check for !... .isEmpty()
+            if (elementDescriptor.getEntityIdAttributeNames() != null) {
                 jpaProviderDeletesCollection = evm.getJpaProvider().supportsJoinTableCleanupOnDelete();
             } else {
                 jpaProviderDeletesCollection = evm.getJpaProvider().supportsCollectionTableCleanupOnDelete();
@@ -731,7 +748,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                             attributeName,
                             attributeMapping,
                             entityClass,
-                            idAttributeName,
+                            idAttributeNames,
                             flushStrategy,
                             entityAttributeAccessor,
                             viewAttributeAccessor,
@@ -763,7 +780,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                                 attributeName,
                                 attributeMapping,
                                 entityClass,
-                                idAttributeName,
+                                idAttributeNames,
                                 flushStrategy,
                                 entityAttributeAccessor,
                                 viewAttributeAccessor,
@@ -783,7 +800,7 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                                 attributeName,
                                 attributeMapping,
                                 entityClass,
-                                idAttributeName,
+                                idAttributeNames,
                                 flushStrategy,
                                 entityAttributeAccessor,
                                 viewAttributeAccessor,
@@ -959,12 +976,18 @@ public class EntityViewUpdaterImpl implements EntityViewUpdater {
                 UnmappedBasicAttributeCascadeDeleter deleter;
 
                 if (elementDescriptor.isJpaEntity() && cascadeDelete) {
-                    String elementIdAttributeName = entityMetamodel.getManagedType(ExtendedManagedType.class, attributeType.getJavaType()).getIdAttribute().getName();
+                    Set<SingularAttribute> elementIdAttributes = entityMetamodel.getManagedType(ExtendedManagedType.class, attributeType.getJavaType()).getIdAttributes();
+                    Set<String> elementIdAttributeNamesAndMapping = new HashSet<>();
+                    for(SingularAttribute elementIdAttribute : elementIdAttributes){
+                        elementIdAttributeNamesAndMapping.add(attributeMapping + "." + elementIdAttribute.getName());
+                    }
+                    Set<String> elementIdAttributeMappings = new HashSet<>();
                     deleter = new UnmappedBasicAttributeCascadeDeleter(
                             evm,
                             attributeName,
                             entityMetamodel.getManagedType(ExtendedManagedType.class, entityClass).getAttribute(attributeMapping),
-                            attributeMapping + "." + elementIdAttributeName,
+                            //TODO: check if the assumed syntax of attribute name and mapping is correct. 
+                            elementIdAttributeNamesAndMapping,
                             false
                     );
                 } else {

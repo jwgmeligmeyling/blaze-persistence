@@ -92,12 +92,12 @@ import com.blazebit.persistence.view.spi.type.EntityViewProxy;
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SingularAttribute;
+import javax.persistence.metamodel.Type;
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -244,9 +244,11 @@ public class EntityViewManagerImpl implements EntityViewManager {
     public <T> T find(EntityManager entityManager, EntityViewSetting<T, CriteriaBuilder<T>> entityViewSetting, Object entityId) {
         ViewTypeImpl<T> managedViewType = metamodel.view(entityViewSetting.getEntityViewClass());
         EntityType<?> entityType = (EntityType<?>) managedViewType.getJpaManagedType();
-        SingularAttribute<?, ?> idAttribute = JpaMetamodelUtils.getSingleIdAttribute(entityType);
-        CriteriaBuilder<?> cb = cbf.create(entityManager, managedViewType.getEntityClass())
-                .where(idAttribute.getName()).eq(entityId);
+        CriteriaBuilder<?> cb = cbf.create(entityManager, managedViewType.getEntityClass());
+        Map<String, Object> entityIdValues = JpaMetamodelUtils.getIdNameValueMap(entityType.getJavaType(),entityId,entityManager.getMetamodel(),metamodel.getEntityMetamodel(),jpaProvider);
+        for (Map.Entry<String, Object> entityIdValuesEntry : entityIdValues.entrySet()){
+            cb.where(entityIdValuesEntry.getKey()).eq(entityIdValuesEntry.getValue());
+        }
         List<T> resultList = applySetting(entityViewSetting, cb).getResultList();
         return resultList.isEmpty() ? null : resultList.get(0);
     }

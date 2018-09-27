@@ -33,10 +33,7 @@ import com.blazebit.persistence.view.impl.update.UpdateContext;
 import com.blazebit.persistence.view.spi.type.BasicUserType;
 
 import javax.persistence.EntityManager;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  *
@@ -45,9 +42,9 @@ import java.util.Objects;
  */
 public class IndexedListAttributeFlusher<E, V extends List<?>> extends CollectionAttributeFlusher<E, V> {
     @SuppressWarnings("unchecked")
-    public IndexedListAttributeFlusher(String attributeName, String mapping, Class<?> ownerEntityClass, String ownerIdAttributeName, FlushStrategy flushStrategy, AttributeAccessor attributeMapper, InitialValueAttributeAccessor viewAttributeAccessor, boolean optimisticLockProtected, boolean collectionUpdatable,
+    public IndexedListAttributeFlusher(String attributeName, String mapping, Class<?> ownerEntityClass, Set<String> ownerIdAttributeNames, FlushStrategy flushStrategy, AttributeAccessor attributeMapper, InitialValueAttributeAccessor viewAttributeAccessor, boolean optimisticLockProtected, boolean collectionUpdatable,
                                        boolean viewOnlyDeleteCascaded, boolean jpaProviderDeletesCollection, CollectionRemoveListener cascadeDeleteListener, CollectionRemoveListener removeListener, CollectionInstantiator collectionInstantiator, TypeDescriptor elementDescriptor, InverseFlusher<E> inverseFlusher, InverseRemoveStrategy inverseRemoveStrategy) {
-        super(attributeName, mapping, ownerEntityClass, ownerIdAttributeName, flushStrategy, attributeMapper, viewAttributeAccessor, optimisticLockProtected, collectionUpdatable, viewOnlyDeleteCascaded, jpaProviderDeletesCollection, cascadeDeleteListener, removeListener, collectionInstantiator, elementDescriptor, inverseFlusher, inverseRemoveStrategy);
+        super(attributeName, mapping, ownerEntityClass, ownerIdAttributeNames, flushStrategy, attributeMapper, viewAttributeAccessor, optimisticLockProtected, collectionUpdatable, viewOnlyDeleteCascaded, jpaProviderDeletesCollection, cascadeDeleteListener, removeListener, collectionInstantiator, elementDescriptor, inverseFlusher, inverseRemoveStrategy);
     }
 
     public IndexedListAttributeFlusher(IndexedListAttributeFlusher<E, V> original, boolean fetch) {

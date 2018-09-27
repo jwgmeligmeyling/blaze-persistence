@@ -44,9 +44,7 @@ import com.blazebit.persistence.view.spi.type.TypeConverter;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.SingularAttribute;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -63,14 +61,14 @@ public class TypeDescriptor {
     private final boolean shouldJpaPersist;
     private final boolean cascadePersist;
     private final boolean cascadeUpdate;
-    private final String entityIdAttributeName;
+    private final Set<String> entityIdAttributeNames;
     private final TypeConverter<Object, Object> converter;
     private final BasicUserType<Object> basicUserType;
     private final EntityToEntityMapper entityToEntityMapper;
     private final ViewToEntityMapper viewToEntityMapper;
     private final ViewToEntityMapper loadOnlyViewToEntityMapper;
 
-    public TypeDescriptor(boolean mutable, boolean identifiable, boolean jpaManaged, boolean jpaEntity, boolean shouldJpaMerge, boolean shouldJpaPersist, boolean cascadePersist, boolean cascadeUpdate, String entityIdAttributeName,
+    public TypeDescriptor(boolean mutable, boolean identifiable, boolean jpaManaged, boolean jpaEntity, boolean shouldJpaMerge, boolean shouldJpaPersist, boolean cascadePersist, boolean cascadeUpdate, Set<String> entityIdAttributeNames,
                           TypeConverter<Object, Object> converter, BasicUserType<Object> basicUserType, EntityToEntityMapper entityToEntityMapper, ViewToEntityMapper viewToEntityMapper, ViewToEntityMapper loadOnlyViewToEntityMapper) {
         this.mutable = mutable;
         this.identifiable = identifiable;
@@ -80,7 +78,7 @@ public class TypeDescriptor {
         this.shouldJpaPersist = shouldJpaPersist;
         this.cascadePersist = cascadePersist;
         this.cascadeUpdate = cascadeUpdate;
-        this.entityIdAttributeName = entityIdAttributeName;
+        this.entityIdAttributeNames = entityIdAttributeNames;
         this.converter = converter;
         this.basicUserType = basicUserType;
         this.entityToEntityMapper = entityToEntityMapper;
@@ -106,7 +104,8 @@ public class TypeDescriptor {
         final boolean identifiable;
         TypeConverter<Object, Object> converter = (TypeConverter<Object, Object>) type.getConverter();
         BasicUserType<Object> basicUserType;
-        String entityIdAttributeName = null;
+        Set<String> entityIdAttributeNames = new HashSet<>();
+
         // TODO: currently we only check if the declared type is mutable, but we have to let the collection flusher which types are considered updatable/creatable
         if (type instanceof BasicType<?>) {
             basicUserType = (BasicUserType<Object>) ((BasicType<?>) type).getUserType();
@@ -120,23 +119,30 @@ public class TypeDescriptor {
                 if (cascadeUpdate) {
                     fetchGraph = getFetchGraph(attribute.getFetches(), attribute.getMapping(), managedType);
                 }
-
-                entityIdAttributeName = evm.getMetamodel().getEntityMetamodel().getManagedType(ExtendedManagedType.class, type.getJavaType()).getIdAttribute().getName();
+                Set<SingularAttribute> idAttributes = evm.getMetamodel().getEntityMetamodel().getManagedType(ExtendedManagedType.class, type.getJavaType()).getIdAttributes();
+                for (SingularAttribute idAttribute : idAttributes){
+                    if (idAttribute != null) {
+                        entityIdAttributeNames.add(idAttribute.getName());
+                    }
+                }
 
                 // Only construct when orphanRemoval or delete cascading is enabled, orphanRemoval implies delete cascading
                 if (attribute.isDeleteCascaded()) {
                     String mapping = attribute.getMapping();
+                    Set<String> entityIdAttributeNamesAndMapping = new HashSet<>();
+                    for(String entityIdAttributeName : entityIdAttributeNames){
+                        entityIdAttributeNamesAndMapping.add(mapping + "." + entityIdAttributeName);
+                    }
                     ExtendedManagedType elementManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, attribute.getDeclaringType().getEntityClass());
                     deleter = new UnmappedBasicAttributeCascadeDeleter(
                             evm,
                             mapping,
                             elementManagedType.getAttribute(mapping),
-                            mapping + "." + entityIdAttributeName,
+                            entityIdAttributeNamesAndMapping,
                             false
-                    );
+                        );
                 }
-
-                entityToEntityMapper = new DefaultEntityToEntityMapper(
+                 entityToEntityMapper = new DefaultEntityToEntityMapper(
                         cascadePersist,
                         cascadeUpdate,
                         basicUserType,
@@ -152,9 +158,11 @@ public class TypeDescriptor {
             viewToEntityMapper = createViewToEntityMapper(attributeLocation, evm, elementType, cascadePersist, cascadeUpdate, persistAllowedSubtypes, updateAllowedSubtypes);
             loadOnlyViewToEntityMapper = createLoadOnlyViewToEntityMapper(attributeLocation, evm, elementType, cascadePersist, cascadeUpdate, persistAllowedSubtypes, updateAllowedSubtypes);
             identifiable = viewToEntityMapper.getViewIdAccessor() != null;
-            SingularAttribute idAttribute = evm.getMetamodel().getEntityMetamodel().getManagedType(ExtendedManagedType.class, elementType.getEntityClass()).getIdAttribute();
-            if (idAttribute != null) {
-                entityIdAttributeName = idAttribute.getName();
+            Set<SingularAttribute> idAttributes = evm.getMetamodel().getEntityMetamodel().getManagedType(ExtendedManagedType.class, elementType.getEntityClass()).getIdAttributes();
+            for (SingularAttribute idAttribute : idAttributes){
+                if (idAttribute != null) {
+                    entityIdAttributeNames.add(idAttribute.getName());
+                }
             }
         }
 
@@ -171,7 +179,7 @@ public class TypeDescriptor {
                 shouldJpaPersist,
                 shouldFlushPersists,
                 shouldFlushUpdates,
-                entityIdAttributeName,
+                entityIdAttributeNames,
                 converter,
                 basicUserType,
                 entityToEntityMapper,
@@ -397,8 +405,8 @@ public class TypeDescriptor {
         return cascadeUpdate;
     }
 
-    public String getEntityIdAttributeName() {
-        return entityIdAttributeName;
+    public Set<String> getEntityIdAttributeNames() {
+        return entityIdAttributeNames;
     }
 
     public TypeConverter<Object, Object> getConverter() {

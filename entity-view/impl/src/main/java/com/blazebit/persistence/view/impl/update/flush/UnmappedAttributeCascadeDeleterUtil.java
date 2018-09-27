@@ -24,6 +24,7 @@ import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -35,7 +36,7 @@ public class UnmappedAttributeCascadeDeleterUtil {
     private UnmappedAttributeCascadeDeleterUtil() {
     }
 
-    public static List<UnmappedAttributeCascadeDeleter> createUnmappedCascadeDeleters(EntityViewManagerImpl evm, Class<?> entityClass, String ownerIdAttributeName) {
+    public static List<UnmappedAttributeCascadeDeleter> createUnmappedCascadeDeleters(EntityViewManagerImpl evm, Class<?> entityClass, Set<String> ownerIdAttributeNames) {
         EntityMetamodel entityMetamodel = evm.getMetamodel().getEntityMetamodel();
         ExtendedManagedType<?> extendedManagedType = entityMetamodel.getManagedType(ExtendedManagedType.class, entityClass);
         Map<String, ? extends ExtendedAttribute<?, ?>> attributes = extendedManagedType.getAttributes();
@@ -50,7 +51,7 @@ public class UnmappedAttributeCascadeDeleterUtil {
                             entry.getKey(),
                             extendedAttribute,
                             entityClass,
-                            ownerIdAttributeName,
+                            ownerIdAttributeNames,
                             true
                     ));
                 } else {
@@ -59,7 +60,7 @@ public class UnmappedAttributeCascadeDeleterUtil {
                             entry.getKey(),
                             extendedAttribute,
                             entityClass,
-                            ownerIdAttributeName,
+                            ownerIdAttributeNames,
                             true
                     ));
                 }
@@ -68,7 +69,7 @@ public class UnmappedAttributeCascadeDeleterUtil {
                         evm,
                         entry.getKey(),
                         extendedAttribute,
-                        ownerIdAttributeName,
+                        ownerIdAttributeNames,
                         true
                 ));
             }

@@ -22,6 +22,7 @@ import com.blazebit.persistence.view.impl.update.UpdateContext;
 
 import javax.persistence.Query;
 import java.util.List;
+import java.util.Set;
 
 /**
  *

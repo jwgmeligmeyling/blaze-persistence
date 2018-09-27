@@ -16,14 +16,21 @@
 
 package com.blazebit.persistence.view.impl.entity;
 
+import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.view.impl.accessor.AttributeAccessor;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
 import com.blazebit.persistence.view.impl.update.flush.DirtyAttributeFlusher;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
-import java.util.List;
-
+import javax.persistence.Query;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.SingularAttribute;
+import javax.persistence.metamodel.Type;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
 /**
  *
  * @author Christian Beikov
@@ -34,8 +41,8 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
     private final DirtyAttributeFlusher<?, Object, Object>[] flushers;
     private volatile String queryString;
 
-    public FlusherBasedEntityLoader(Class<?> entityClass, javax.persistence.metamodel.SingularAttribute<?, ?> jpaIdAttribute, ViewToEntityMapper viewIdMapper, AttributeAccessor entityIdAccessor, DirtyAttributeFlusher<?, Object, Object>[] flushers) {
-        super(entityClass, jpaIdAttribute, viewIdMapper, entityIdAccessor);
+    public FlusherBasedEntityLoader(Class<?> entityClass, Set<SingularAttribute<?, ?>> jpaIdAttributes, ViewToEntityMapper viewIdMapper, AttributeAccessor entityIdAccessor, DirtyAttributeFlusher<?, Object, Object>[] flushers) {
+        super(entityClass, jpaIdAttributes, viewIdMapper, entityIdAccessor);
         this.flushers = flushers;
         // TODO: optimize by copying more from existing loaders and avoid object allocations
         // TODO: consider constructing query eagerly,
@@ -55,8 +62,10 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
                 flushers[i].appendFetchJoinQueryFragment("e", sb);
             }
         }
-        sb.append(" WHERE e.").append(idAttributeName).append(" = :id");
-
+        for (String idAttributeName : idAttributeNames){
+            sb.append(" WHERE e.").append(idAttributeName).append(" = :"+idAttributeName.replace(".","_")+"_variable"+" AND");
+        }
+        sb.setLength(sb.length() - " AND".length());
         query = sb.toString();
         queryString = query;
         return query;
@@ -74,13 +83,19 @@ public class FlusherBasedEntityLoader extends AbstractEntityLoader {
     @Override
     protected Object queryEntity(EntityManager em, Object id) {
         @SuppressWarnings("unchecked")
-        List<Object> list = em.createQuery(getQueryString())
-                .setParameter("id", id)
-                .getResultList();
+        Map<String, Object> ownerIds = JpaMetamodelUtils.getIdNameValueMap(entityClass,id,em.getMetamodel());
+        //TODO: create IdClass test, as idType will probably return null for that case.
+        EntityType<?> entityType = em.getMetamodel().entity(entityClass);
+        Query query = em.createQuery(getQueryString());
+        for(String idAttributeName : idAttributeNames){
+            query.setParameter(idAttributeName.replace(".","_")+"_variable",ownerIds.get(idAttributeName));
+        }
+
+        List<Object> list = query.getResultList();
         if (list.isEmpty()) {
             throw new EntityNotFoundException("Required entity '" + entityClass.getName() + "' with id '" + id + "' couldn't be found!");
         }
-
+        //TODO check whether this does not only return one element in the case of an IdClass.
         return list.get(0);
     }
 }

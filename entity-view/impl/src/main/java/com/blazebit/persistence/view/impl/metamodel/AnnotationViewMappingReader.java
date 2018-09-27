@@ -34,12 +34,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Christian Beikov
@@ -133,7 +128,7 @@ public class AnnotationViewMappingReader implements ViewMappingReader {
         }
 
         // Attributes
-        MethodAttributeMapping idAttribute = null;
+        Map<String,MethodAttributeMapping> idAttributeMapping = new HashMap<String,MethodAttributeMapping>();
 
         Map<String, MethodAttributeMapping> attributes = viewMapping.getMethodAttributes();
 
@@ -179,9 +174,14 @@ public class AnnotationViewMappingReader implements ViewMappingReader {
                                 if (mapping != null) {
                                     MethodAttributeMapping attribute = methodAttributeMappingReader.readMethodAttributeMapping(viewMapping, mapping, attributeName, method);
                                     attributes.put(attributeName, attribute);
+                                    idAttributeMapping.put(attributeName,null);
+                                    // MAttributeMapping idAttribute -> Map<String attributeName, MAttributeMapping> idAttributes
+                                    // idAttributes.get(attributeName) -> handleReplacement
+                                    // Here we are cycling over all attributes, which are derived from the method used in the for loop around line 167.
+                                    // Note: change idAttribute around line 210 as well.
 
                                     if (attribute.isId()) {
-                                        idAttribute = attribute.handleReplacement(idAttribute);
+                                        idAttributeMapping.put(attribute.getName(),attribute.handleReplacement(idAttributeMapping.get(attribute.getName())));
                                     }
                                 }
                             }
@@ -202,8 +202,9 @@ public class AnnotationViewMappingReader implements ViewMappingReader {
 
                         if (newAttribute != originalAttribute) {
                             attributes.put(attributeName, newAttribute);
+                            idAttributeMapping.put(attributeName,null);
                             if (newAttribute.isId()) {
-                                idAttribute = newAttribute.handleReplacement(idAttribute);
+                                idAttributeMapping.put(newAttribute.getName(),newAttribute.handleReplacement(idAttributeMapping.get(newAttribute.getName())));
                             }
                         }
                     }
@@ -233,7 +234,18 @@ public class AnnotationViewMappingReader implements ViewMappingReader {
 
         viewMapping.setPostCreateMethod(postCreateMethod);
         viewMapping.setSpecialMethods(specialMethods);
-        viewMapping.setIdAttributeMapping(idAttribute);
+
+        Set<MethodAttributeMapping> attributeMappings = new HashSet<>(idAttributeMapping.values());
+        attributeMappings.remove(null);
+        //TODO: remove all instances of IdAttributeMapping (without plural)
+        if (attributeMappings.size()!=0){
+            viewMapping.setIdAttributeMapping(attributeMappings.iterator().next());
+        } else {
+            viewMapping.setIdAttributeMapping(null);
+        }
+        viewMapping.setIdAttributeMappings(attributeMappings);
+
+
 
         for (Constructor<?> constructor : entityViewClass.getDeclaredConstructors()) {
             int parameterCount = constructor.getParameterTypes().length;
