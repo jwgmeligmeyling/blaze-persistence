@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.view.impl.objectbuilder.transformer;
+package com.blazebit.persistence.view.testsuite.inheritance.subview.simple.model;
 
-
-import com.blazebit.persistence.view.impl.objectbuilder.transformator.UpdatableViewMap;
+import com.blazebit.persistence.view.EntityView;
+import com.blazebit.persistence.view.EntityViewInheritance;
+import com.blazebit.persistence.testsuite.entity.Person;
 
 /**
  *
  * @author Christian Beikov
- * @since 1.0.0
+ * @since 1.2.0
  */
-public interface TupleTransformer {
-
-    public int getConsumeStartIndex();
-
-    public int getConsumeEndIndex();
-
-    public Object[] transform(Object[] tuple, UpdatableViewMap updatableViewMap);
+@EntityView(Person.class)
+@EntityViewInheritance({ YoungPersonView3.class, OldPersonView3.class })
+public interface PersonBaseView3 extends PersonBaseView {
+    
 }

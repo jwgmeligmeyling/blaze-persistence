@@ -337,6 +337,7 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
     }
 
     String addRootValues(Class<?> valueHolderEntityClass, Class<?> valueClass, String rootAlias, int valueCount, String typeName, String castedParameter, boolean identifiableReference, boolean valueClazzAttributeSingular, String valuesClassAttributeName, ExtendedAttribute<?, ?> valuesLikeAttribute, String valueLikeClause, String qualificationExpression) {
+        mainQuery.assertSupportsAdvancedSql("Illegal use of VALUES clause!");
         if (rootAlias == null) {
             throw new IllegalArgumentException("Illegal empty alias for the VALUES clause: " + valueHolderEntityClass.getName());
         }

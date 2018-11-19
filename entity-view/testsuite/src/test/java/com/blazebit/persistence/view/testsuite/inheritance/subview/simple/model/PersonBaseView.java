@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.view.impl.objectbuilder.transformer;
+package com.blazebit.persistence.view.testsuite.inheritance.subview.simple.model;
 
-
-import com.blazebit.persistence.view.impl.objectbuilder.transformator.UpdatableViewMap;
+import com.blazebit.persistence.view.IdMapping;
 
 /**
  *
  * @author Christian Beikov
- * @since 1.0.0
+ * @since 1.2.0
  */
-public interface TupleTransformer {
+public interface PersonBaseView {
 
-    public int getConsumeStartIndex();
+    @IdMapping
+    public Long getId();
 
-    public int getConsumeEndIndex();
-
-    public Object[] transform(Object[] tuple, UpdatableViewMap updatableViewMap);
+    public String getName();
 }

@@ -14,50 +14,50 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.view.impl.objectbuilder.transformer.correlation;
+package com.blazebit.persistence.view.impl.objectbuilder.mapper;
 
-import com.blazebit.persistence.ObjectBuilder;
+import com.blazebit.persistence.ParameterHolder;
+import com.blazebit.persistence.view.impl.EntityViewConfiguration;
 import com.blazebit.persistence.view.impl.objectbuilder.TupleReuse;
-import com.blazebit.persistence.view.impl.objectbuilder.ViewTypeObjectBuilderTemplate;
 import com.blazebit.persistence.view.impl.objectbuilder.transformator.UpdatableViewMap;
 import com.blazebit.persistence.view.impl.objectbuilder.transformer.TupleTransformer;
+import com.blazebit.persistence.view.impl.objectbuilder.transformer.TupleTransformerFactory;
+
+import java.util.Map;
 
 /**
  *
  * @author Christian Beikov
- * @since 1.2.0
+ * @since 1.3.0
  */
-public class CorrelatedSubviewJoinTupleTransformer implements TupleTransformer {
+public class ConsumingTupleTransformer implements TupleTransformerFactory, TupleTransformer {
 
-    private final ViewTypeObjectBuilderTemplate<Object[]> template;
-    private final int consumeStartIndex;
-    private final int consumeEndIndex;
-    private final ObjectBuilder<Object[]> objectBuilder;
+    private final int[] consumableIndexArray;
 
-    public CorrelatedSubviewJoinTupleTransformer(ViewTypeObjectBuilderTemplate<Object[]> template, ObjectBuilder<Object[]> objectBuilder) {
-        this.template = template;
-        this.consumeStartIndex = template.getTupleOffset() + 1;
-        this.consumeEndIndex = template.getTupleOffset() + template.getMappers().length;
-        this.objectBuilder = objectBuilder;
+    public ConsumingTupleTransformer(int[] consumableIndexArray) {
+        this.consumableIndexArray = consumableIndexArray;
     }
 
     @Override
     public int getConsumeStartIndex() {
-        return consumeStartIndex;
+        return -1;
     }
 
     @Override
     public int getConsumeEndIndex() {
-        return consumeEndIndex;
+        return -1;
+    }
+
+    @Override
+    public TupleTransformer create(ParameterHolder<?> parameterHolder, Map<String, Object> optionalParameters, EntityViewConfiguration entityViewConfiguration) {
+        return this;
     }
 
     @Override
     public Object[] transform(Object[] tuple, UpdatableViewMap updatableViewMap) {
-        tuple[template.getTupleOffset()] = objectBuilder.build(tuple);
-        for (int i = consumeStartIndex; i < consumeEndIndex; i++) {
-            tuple[i] = TupleReuse.CONSUMED;
+        for (int i = 0; i < consumableIndexArray.length; i++) {
+            tuple[consumableIndexArray[i]] = TupleReuse.CONSUMED;
         }
         return tuple;
     }
-
 }

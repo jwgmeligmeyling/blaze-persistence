@@ -54,6 +54,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  *
@@ -916,15 +917,39 @@ public abstract class ManagedViewTypeImpl<X> implements ManagedViewTypeImplement
             int subtypeIndex = 0;
             // Collect all attributes from all subtypes in separate maps
             Map<AttributeKey, ConstrainedAttribute<AbstractMethodAttribute<? super X, ?>>> subtypesAttributesClosure = new LinkedHashMap<>();
+            Set<Integer> subtypeIndexes = new TreeSet<>();
+            for (int i = 0; i < subtypes.length; i++) {
+                subtypeIndexes.add(i);
+            }
+            int[] subtypeIndexArray = new int[subtypeIndexes.size()];
+            {
+                int j = 0;
+                for (Integer idx : subtypeIndexes) {
+                    subtypeIndexArray[j++] = idx;
+                }
+            }
 
             for (AbstractMethodAttribute<? super X, ?> attribute : baseType.attributes.values()) {
-                subtypesAttributesClosure.put(new AttributeKey(0, attribute.getName()), new ConstrainedAttribute<AbstractMethodAttribute<? super X, ?>>(null, attribute));
+                subtypesAttributesClosure.put(new AttributeKey(0, attribute.getName()), new ConstrainedAttribute<AbstractMethodAttribute<? super X, ?>>(null, subtypeIndexArray, attribute));
             }
 
             if (subtypes.length > 0) {
                 // Go through the subtype attributes and put them in the attribute closure maps
-                for (ManagedViewTypeImpl<? extends X> subtype : subtypes) {
-                    subtypeIndex++;
+                for (int i = 0; i < subtypes.length; i++) {
+                    ManagedViewTypeImpl<? extends X> subtype = subtypes[i];
+                    subtypeIndexes.clear();
+                    for (int j = i; j < subtypes.length; j++) {
+                        if (subtype.getJavaType().isAssignableFrom(subtypes[j].getJavaType())) {
+                            subtypeIndexes.add(j);
+                        }
+                    }
+                    subtypeIndexArray = new int[subtypeIndexes.size()];
+                    {
+                        int j = 0;
+                        for (Integer idx : subtypeIndexes) {
+                            subtypeIndexArray[j++] = idx;
+                        }
+                    }
 
                     for (AbstractMethodAttribute<? super X, ?> attribute : (Collection<AbstractMethodAttribute<? super X, ?>>) (Collection<?>) subtype.attributes.values()) {
                         // Try to find the attribute on some of the super types to see if it is specialized
@@ -934,12 +959,13 @@ public abstract class ManagedViewTypeImpl<X> implements ManagedViewTypeImplement
                                 superTypeAttribute.addSubAttribute(subtype, attribute);
                             } else {
                                 // This attribute was overridden/specialized in a subtype
-                                superTypeAttribute.addSelectionConstraint(inheritanceSubtypeConfiguration.get(subtype), attribute);
+                                superTypeAttribute.addSelectionConstraint(inheritanceSubtypeConfiguration.get(subtype), subtypeIndexArray, attribute);
                             }
                         } else {
-                            subtypesAttributesClosure.put(new AttributeKey(subtypeIndex, attribute.getName()), new ConstrainedAttribute<AbstractMethodAttribute<? super X, ?>>(inheritanceSubtypeConfiguration.get(subtype), attribute));
+                            subtypesAttributesClosure.put(new AttributeKey(subtypeIndex, attribute.getName()), new ConstrainedAttribute<AbstractMethodAttribute<? super X, ?>>(inheritanceSubtypeConfiguration.get(subtype), subtypeIndexArray, attribute));
                         }
                     }
+                    subtypeIndex++;
                 }
             }
 
@@ -948,7 +974,7 @@ public abstract class ManagedViewTypeImpl<X> implements ManagedViewTypeImplement
 
         @SuppressWarnings("unchecked")
         private ConstrainedAttribute<AbstractMethodAttribute<? super X, ?>> findAttribute(Map<AttributeKey, ConstrainedAttribute<AbstractMethodAttribute<? super X, ?>>> subtypesAttributesClosure, ManagedViewTypeImpl<?>[] subtypes, int subtypeIndex, String name) {
-            for (int i = subtypeIndex - 1; i >= 0; i--) {
+            for (int i = subtypeIndex; i >= 0; i--) {
                 // Must be a proper subtype and contain an attribute with that name
                 if (subtypes[i].javaType.isAssignableFrom(subtypes[i].javaType) && subtypes[i].getAttribute(name) != null) {
                     // Only then we will try to find the constrained attribute
