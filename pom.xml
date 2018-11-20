@@ -25,7 +25,7 @@
     </parent>
 
     <artifactId>blaze-persistence</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.3.0.PAG-CR1</version>
     <packaging>pom</packaging>
 
     <name>Blazebit Blaze-Persistence</name>
@@ -348,4 +348,16 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>pallasathenagroup</id>
+            <name>pallasathenagroup-releases-local</name>
+            <url>https://pallasathenagroup.jfrog.io/pallasathenagroup/libs-release-local</url>
+        </repository>
+        <snapshotRepository>
+            <id>pallasathenagroup</id>
+            <name>pallasathenagroup-snapshots-local</name>
+            <url>https://pallasathenagroup.jfrog.io/pallasathenagroup/libs-snapshot-local</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
