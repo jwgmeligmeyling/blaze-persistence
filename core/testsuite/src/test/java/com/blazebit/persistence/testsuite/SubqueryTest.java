@@ -93,6 +93,22 @@ public class SubqueryTest extends AbstractCoreTest {
         });
     }
 
+
+    @Test
+    public void testSubqueryPathExpressionResolving() {
+        CriteriaBuilder<Tuple> cb = cbf.create(em, Tuple.class)
+            .from(Document.class, "d")
+            .where("d.owner.id").in().from(Person.class).select("id").end()
+            .select("d.id", "id");
+
+        String queryString = cb.getQueryString();
+
+        assertTrue(
+            "Expected id was bound to document rather than person",
+            queryString.contains("(SELECT person.id FROM Person person)")
+        );
+    }
+
     @Test
     public void testNotEndedBuilder() {
         CriteriaBuilder<Document> crit = cbf.create(em, Document.class, "d");
