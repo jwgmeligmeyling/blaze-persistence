@@ -2,6 +2,7 @@ package com.blazebit.persistence.querydsl
 
 import com.mysema.query.jpa.JPQLTemplates
 import com.mysema.query.types.Ops
+import com.mysema.query.types.Templates
 
 class BlazePersistJPQLTemplates : JPQLTemplates {
 
@@ -59,8 +60,10 @@ class BlazePersistJPQLTemplates : JPQLTemplates {
         add(Ops.DateTimeOps.YEAR_MONTH, "function('yearMonth', {0})")
         add(Ops.DateTimeOps.YEAR_WEEK, "function('yearweek', {0})")
         add(Ops.DateTimeOps.DAY_OF_WEEK, "function('dayofweek', {0})")
-        add(Ops.DateTimeOps.DAY_OF_MONTH, "function('dayofmonth', {0})")
-        add(Ops.DateTimeOps.DAY_OF_YEAR, "function('day', {0})")
+        add(Ops.DateTimeOps.DAY_OF_MONTH, "function('day', {0})")
+        add(Ops.DateTimeOps.DAY_OF_YEAR, "function('dayofyear', {0})")
+        add(Ops.DateTimeOps.YEAR_MONTH, "function('year', {0}) * 100 + function('month', {0})", Templates.Precedence.ARITH_LOW)
+        add(Ops.DateTimeOps.YEAR_WEEK, "function('year', {0}) * 100 + function('week', {0})", Templates.Precedence.ARITH_LOW)
 
         add(Ops.DateTimeOps.TRUNC_YEAR, "function('trunc_year', {0})")
         add(Ops.DateTimeOps.TRUNC_MONTH, "function('trunc_month', {0})")
