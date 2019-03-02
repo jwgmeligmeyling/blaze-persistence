@@ -28,7 +28,6 @@ import com.blazebit.persistence.testsuite.entity.QTestCTE.testCTE
 import com.blazebit.persistence.testsuite.entity.QRecursiveEntity.recursiveEntity
 import com.blazebit.persistence.testsuite.entity.QNameObject.nameObject
 import com.blazebit.persistence.testsuite.entity.QNameObjectContainer.nameObjectContainer
-import com.mysema.query.types.EntityPath
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.experimental.categories.Category
@@ -37,6 +36,53 @@ import javax.persistence.Tuple
 
 
 class BasicTest : AbstractCoreTest() {
+
+    @Test
+    fun stringOperators() {
+        cbf.create(em, Tuple::class)
+                .from(person)
+                .select(person.name + " " + person.name)
+                .resultList
+    }
+
+
+    @Test
+    fun stringFunctions() {
+        cbf.create(em, Tuple::class)
+                .from(person)
+                .select(person.name
+                        .trim()
+                        .lpad(2, "test")
+                        .rpad(2, "test")
+                        .ltrim()
+                        .rtrim()
+                        .upper().lower().substring(person.nameObject.intIdEntity.id))
+                .resultList
+    }
+
+    @Test
+    fun dateExtractionFunctions() {
+        cbf.create(em, Tuple::class)
+                .from(document)
+                .select(document.lastModified.dayOfMonth())
+                .select(document.lastModified.dayOfWeek())
+                .select(document.lastModified.dayOfYear())
+                .select(document.lastModified.year())
+                .select(document.lastModified.month())
+                .select(document.lastModified.week())
+                .select(document.lastModified.hour())
+                .select(document.lastModified.minute())
+                .select(document.lastModified.second())
+                .resultList
+    }
+
+    @Test
+    fun greatestFunction() {
+        cbf.create(em, Tuple::class)
+                .from(person)
+                .select(person.age.greatest(1L).round())
+                .resultList
+    }
 
     @Test
     fun simplePathPredicate() {

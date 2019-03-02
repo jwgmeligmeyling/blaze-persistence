@@ -20,9 +20,9 @@ import com.blazebit.persistence.*
 import com.blazebit.persistence.spi.ServiceProvider
 import com.mysema.query.jpa.JPQLSerializer
 import com.mysema.query.jpa.JPQLTemplates
-import com.mysema.query.jpa.impl.JPAQuery
 import com.mysema.query.types.*
 import com.mysema.query.types.Path
+import com.mysema.query.types.expr.*
 import javax.persistence.EntityManager
 import kotlin.reflect.KClass
 
@@ -701,6 +701,29 @@ fun <T : FromBaseBuilder<T>, A> T.fromIdentifiableValues(entityPath : EntityPath
     return this.fromIdentifiableValues(entityPath.type as Class<A>, alias, values)
 }
 
+fun <X> NumberExpression<X>.greatest(expression: NumberExpression<X>) : NumberExpression<X> where X: Comparable<*>, X : Number {
+    return NumberOperation.create<X>(this.type, Operators.GREATEST, this, expression)
+}
+
+
+fun <X> NumberExpression<X>.greatest(value: X) : NumberExpression<X> where X: Comparable<*>, X : Number {
+    return NumberOperation.create<X>(this.type, Operators.GREATEST, this, ConstantImpl.create<X>(value))
+}
+
+fun <X> NumberExpression<X>.least(expression: NumberExpression<X>) : NumberExpression<X> where X: Comparable<*>, X : Number {
+    return NumberOperation.create<X>(this.type, Operators.LEAST, this, expression)
+}
+
+
+fun <X> NumberExpression<X>.least(value: X) : NumberExpression<X> where X: Comparable<*>, X : Number {
+    return NumberOperation.create<X>(this.type, Operators.LEAST, this, ConstantImpl.create<X>(value))
+}
+
+
+fun <X> NumberExpression<X>.round(decimals: Int) : NumberExpression<X> where X: Comparable<*>, X : Number {
+    return NumberOperation.create<X>(this.type, Ops.MathOps.ROUND2, this, ConstantImpl.create(decimals))
+}
+
 /**
  * Adds an implicit join fetch to the query.
  *
@@ -724,7 +747,7 @@ private fun  <A : ParameterHolder<*>> A.setParameters(parameters : Map<String, A
 
 private fun Any.parseExpressionAndBindParameters(expression : Expression<*>) : Pair<String, HashMap<String, Any>> {
     val em = (this as ServiceProvider).getService(EntityManager::class.java)
-    val ser = JPQLSerializer(JPQLTemplates.DEFAULT, em)
+    val ser = JPQLSerializer(BlazePersistJPQLTemplates.INSTANCE, em)
     expression.accept(ser, null)
     var jpqlQueryFragment = ser.toString()
 

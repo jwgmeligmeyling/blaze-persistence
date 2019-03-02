@@ -16,7 +16,9 @@
 
 package com.blazebit.persistence.querydsl
 
+import com.mysema.query.types.ConstantImpl
 import com.mysema.query.types.Expression
+import com.mysema.query.types.Ops
 import com.mysema.query.types.Predicate
 import com.mysema.query.types.expr.*
 
@@ -128,6 +130,10 @@ operator fun <T> NumberExpression<T>.rem(x : T) : NumberExpression<T> where T: C
     return this.mod(x)
 }
 
+fun <T> NumberExpression<T>.pow(x : T) : NumberExpression<T> where T: Comparable<*>, T : Number {
+    return NumberOperation.create(type, Ops.MathOps.POWER, this, ConstantImpl.create(x))
+}
+
 /**
  * Get the concatenation of this and str
  *
@@ -190,6 +196,46 @@ operator fun StringExpression.get(x : Expression<Int>) : SimpleExpression<Char> 
     return this.charAt(x)
 }
 
+fun StringExpression.lpad(length : Int, fill : String? = null) : StringExpression {
+    return if (fill == null) {
+        StringOperation.create(Ops.StringOps.LPAD, this, ConstantImpl.create(length))
+    } else {
+        StringOperation.create(Ops.StringOps.LPAD2, this, ConstantImpl.create(length), ConstantImpl.create(fill))
+    }
+}
+
+fun StringExpression.rpad(length : Int, fill : String? = null) : StringExpression {
+    return if (fill == null) {
+        StringOperation.create(Ops.StringOps.RPAD, this, ConstantImpl.create(length))
+    } else {
+        StringOperation.create(Ops.StringOps.RPAD2, this, ConstantImpl.create(length), ConstantImpl.create(fill))
+    }
+}
+
+fun StringExpression.ltrim() : StringExpression {
+    return StringOperation.create(Ops.StringOps.LTRIM, this)
+}
+
+fun StringExpression.rtrim() : StringExpression {
+    return StringOperation.create(Ops.StringOps.LTRIM, this)
+}
+
+
+fun StringExpression.left(length : Int) : StringExpression {
+    return StringOperation.create(Ops.StringOps.LEFT, this, ConstantImpl.create(length))
+}
+
+fun StringExpression.right(length : Int) : StringExpression {
+    return StringOperation.create(Ops.StringOps.RIGHT, this, ConstantImpl.create(length))
+}
+
+fun StringExpression.locate(string : String, start : Int? = 0) : NumberExpression<Int> {
+    return if (start == null) {
+        NumberOperation.create(Int::class.java, Ops.StringOps.LOCATE, this, ConstantImpl.create(string))
+    } else {
+        return NumberOperation.create(Int::class.java, Ops.StringOps.LOCATE2, this, ConstantImpl.create(string), ConstantImpl.create(start))
+    }
+}
 /**
  * Get an intersection of this and the given expression
  *
