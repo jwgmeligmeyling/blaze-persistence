@@ -30,7 +30,7 @@ import java.util.Collection;
  * @author Christian Beikov
  * @since 1.0.0
  */
-public interface RestrictionBuilder<T> extends ServiceProvider {
+public interface RestrictionBuilder<T extends ServiceProvider> extends ServiceProvider {
 
     /**
      * Starts a builder for a between predicate with lower bound expression.

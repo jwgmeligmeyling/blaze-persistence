@@ -25,6 +25,7 @@ import javax.persistence.Tuple;
 import com.blazebit.persistence.BaseFinalSetOperationBuilder;
 import com.blazebit.persistence.BaseOngoingFinalSetOperationBuilder;
 import com.blazebit.persistence.parser.expression.Expression;
+import com.blazebit.persistence.spi.ServiceProvider;
 import com.blazebit.persistence.spi.SetOperationType;
 
 /**
@@ -33,7 +34,7 @@ import com.blazebit.persistence.spi.SetOperationType;
  * @author Christian Beikov
  * @since 1.1.0
  */
-public abstract class BaseFinalSetOperationSubqueryBuilderImpl<T, X extends BaseFinalSetOperationBuilder<T, X>> extends BaseFinalSetOperationBuilderImpl<T, X, BaseFinalSetOperationSubqueryBuilderImpl<T, X>> implements BaseOngoingFinalSetOperationBuilder<T, X>, SubqueryInternalBuilder<T> {
+public abstract class BaseFinalSetOperationSubqueryBuilderImpl<T, X extends BaseFinalSetOperationBuilder<T, X> & ServiceProvider> extends BaseFinalSetOperationBuilderImpl<T, X, BaseFinalSetOperationSubqueryBuilderImpl<T, X>> implements BaseOngoingFinalSetOperationBuilder<T, X>, SubqueryInternalBuilder<T> {
 
     protected final T result;
     protected final SubqueryBuilderListener<T> listener;

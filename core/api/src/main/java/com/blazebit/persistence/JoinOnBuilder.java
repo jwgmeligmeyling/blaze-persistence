@@ -24,7 +24,7 @@ package com.blazebit.persistence;
  * @author Christian Beikov
  * @since 1.0.0
  */
-public interface JoinOnBuilder<T> extends BaseJoinOnBuilder<JoinOnBuilder<T>> {
+public interface JoinOnBuilder<T> extends BaseJoinOnBuilder<JoinOnBuilder<T>>{
 
     /**
      * Starts a {@link JoinOnOrBuilder} which is a predicate consisting only of disjunctiv connected predicates.

@@ -20,6 +20,7 @@ import com.blazebit.persistence.BaseOngoingSetOperationBuilder;
 import com.blazebit.persistence.parser.expression.Expression;
 import com.blazebit.persistence.parser.expression.ExpressionFactory;
 import com.blazebit.persistence.spi.DbmsStatementType;
+import com.blazebit.persistence.spi.ServiceProvider;
 import com.blazebit.persistence.spi.SetOperationType;
 
 import javax.persistence.Tuple;
@@ -33,7 +34,7 @@ import java.util.Set;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public abstract class BaseSubqueryBuilderImpl<T, X, Y extends BaseOngoingSetOperationBuilder<?, ?, ?>, Z extends BaseOngoingSetOperationBuilder<?, ?, ?>> extends AbstractCommonQueryBuilder<Tuple, X, Y, Z, BaseFinalSetOperationSubqueryBuilderImpl<T, ?>> implements SubqueryInternalBuilder<T> {
+public abstract class BaseSubqueryBuilderImpl<T, X extends ServiceProvider, Y extends BaseOngoingSetOperationBuilder<?, ?, ?>, Z extends BaseOngoingSetOperationBuilder<?, ?, ?>> extends AbstractCommonQueryBuilder<Tuple, X, Y, Z, BaseFinalSetOperationSubqueryBuilderImpl<T, ?>> implements SubqueryInternalBuilder<T> {
 
     protected final T result;
     protected final SubqueryBuilderListener<T> listener;

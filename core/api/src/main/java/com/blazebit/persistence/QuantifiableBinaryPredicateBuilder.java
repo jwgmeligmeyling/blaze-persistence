@@ -16,6 +16,8 @@
 
 package com.blazebit.persistence;
 
+import com.blazebit.persistence.spi.ServiceProvider;
+
 /**
  * The interface for quantifiable binary predicate builders.
  * The left hand side and the operator are already known to the builder and the methods of this builder either terminate the building
@@ -25,7 +27,7 @@ package com.blazebit.persistence;
  * @author Christian Beikov
  * @since 1.0.0
  */
-public interface QuantifiableBinaryPredicateBuilder<T> extends BinaryPredicateBuilder<T>, SubqueryInitiator<T> {
+public interface QuantifiableBinaryPredicateBuilder<T extends ServiceProvider> extends BinaryPredicateBuilder<T>, SubqueryInitiator<T>, ServiceProvider {
 
     /**
      * Starts a {@link SubqueryInitiator} for the right hand side of a predicate that uses the ALL quantor.

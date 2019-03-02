@@ -53,6 +53,7 @@ import com.blazebit.persistence.parser.predicate.MemberOfPredicate;
 import com.blazebit.persistence.parser.predicate.Predicate;
 import com.blazebit.persistence.parser.predicate.PredicateBuilder;
 import com.blazebit.persistence.internal.RestrictionBuilderExperimental;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,7 +65,7 @@ import java.util.Collection;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class RestrictionBuilderImpl<T> extends PredicateAndSubqueryBuilderEndedListener<T> implements RestrictionBuilderExperimental<T>, LeftHandsideSubqueryPredicateBuilder {
+public class RestrictionBuilderImpl<T extends ServiceProvider> extends PredicateAndSubqueryBuilderEndedListener<T> implements RestrictionBuilderExperimental<T>, LeftHandsideSubqueryPredicateBuilder {
 
     private final T result;
     private final PredicateBuilderEndedListener listener;
@@ -703,7 +704,7 @@ public class RestrictionBuilderImpl<T> extends PredicateAndSubqueryBuilderEndedL
         return super.startBuilder(builder);
     }
 
-    protected <X> SubqueryBuilder<X> startSubqueryBuilder(AbstractQuantifiablePredicateBuilder<X> builder, FullQueryBuilder<?, ?> criteriaBuilder) {
+    protected <X extends ServiceProvider> SubqueryBuilder<X> startSubqueryBuilder(AbstractQuantifiablePredicateBuilder<X> builder, FullQueryBuilder<?, ?> criteriaBuilder) {
         betweenStartSubqueryBuilderListener.verifySubqueryBuilderEnded();
         return super.startBuilder(builder).one(criteriaBuilder);
     }
@@ -778,5 +779,10 @@ public class RestrictionBuilderImpl<T> extends PredicateAndSubqueryBuilderEndedL
             listener.onBuilderEnded(builder);
         }
 
+    }
+
+    @Override
+    public <T> T getService(Class<T> serviceClass) {
+        return result.getService(serviceClass);
     }
 }

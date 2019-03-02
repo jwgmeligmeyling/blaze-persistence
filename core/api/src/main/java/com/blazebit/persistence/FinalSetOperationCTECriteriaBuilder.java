@@ -16,6 +16,8 @@
 
 package com.blazebit.persistence;
 
+import com.blazebit.persistence.spi.ServiceProvider;
+
 /**
  * An interface for builders that support set operators.
  *
@@ -23,7 +25,7 @@ package com.blazebit.persistence;
  * @author Christian Beikov
  * @since 1.1.0
  */
-public interface FinalSetOperationCTECriteriaBuilder<T> extends BaseFinalSetOperationBuilder<T, FinalSetOperationCTECriteriaBuilder<T>> {
+public interface FinalSetOperationCTECriteriaBuilder<T> extends BaseFinalSetOperationBuilder<T, FinalSetOperationCTECriteriaBuilder<T>>, ServiceProvider {
 
     /**
      * Finishes the CTE builder.

@@ -42,6 +42,7 @@ import com.blazebit.persistence.parser.expression.modifier.ExpressionModifier;
 import com.blazebit.persistence.parser.predicate.ExistsPredicate;
 import com.blazebit.persistence.parser.predicate.Predicate;
 import com.blazebit.persistence.impl.transform.ExpressionModifierVisitor;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 import java.util.Collections;
 import java.util.List;
@@ -51,7 +52,7 @@ import java.util.List;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public abstract class PredicateManager<T> extends AbstractManager<ExpressionModifier> {
+public abstract class PredicateManager<T extends ServiceProvider> extends AbstractManager<ExpressionModifier> {
 
     protected final ExpressionFactory expressionFactory;
     protected final RootPredicate rootPredicate;
@@ -275,7 +276,7 @@ public abstract class PredicateManager<T> extends AbstractManager<ExpressionModi
     }
 
     public JoinOnBuilder<?> startOnBuilder(AbstractCommonQueryBuilder<?, ?, ?, ?, ?> builder) {
-        return rootPredicate.startBuilder(new JoinOnBuilderImpl<Object>(builder, rootPredicate, parameterManager, expressionFactory, subqueryInitFactory));
+        return rootPredicate.startBuilder(new JoinOnBuilderImpl<ServiceProvider>(builder, rootPredicate, parameterManager, expressionFactory, subqueryInitFactory));
     }
 
     // TODO: needs equals-hashCode implementation

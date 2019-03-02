@@ -23,6 +23,7 @@ import javax.persistence.TypedQuery;
 import com.blazebit.persistence.FullQueryBuilder;
 import com.blazebit.persistence.Queryable;
 import com.blazebit.persistence.spi.DbmsStatementType;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
@@ -32,7 +33,7 @@ import com.blazebit.persistence.spi.DbmsStatementType;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public abstract class AbstractQueryBuilder<T, X extends Queryable<T, X>, Z, W, FinalSetReturn extends BaseFinalSetOperationBuilderImpl<T, ?, ?>> extends AbstractCommonQueryBuilder<T, X, Z, W, FinalSetReturn> implements Queryable<T, X> {
+public abstract class AbstractQueryBuilder<T, X extends Queryable<T, X> & ServiceProvider, Z, W, FinalSetReturn extends BaseFinalSetOperationBuilderImpl<T, ?, ?>> extends AbstractCommonQueryBuilder<T, X, Z, W, FinalSetReturn> implements Queryable<T, X> {
 
     /**
      * Create flat copy of builder

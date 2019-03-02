@@ -26,7 +26,7 @@ import com.blazebit.persistence.spi.ServiceProvider;
  * @author Christian Beikov
  * @since 1.0.0
  */
-public interface BaseWhereBuilder<T extends BaseWhereBuilder<T>> extends ServiceProvider {
+public interface BaseWhereBuilder<T extends BaseWhereBuilder<T> & ServiceProvider> extends ServiceProvider {
 
     /**
      * Starts a {@link SubqueryInitiator} for the left hand side of a predicate.

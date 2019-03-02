@@ -48,6 +48,7 @@ import com.blazebit.persistence.parser.expression.PathExpression;
 import com.blazebit.persistence.parser.expression.PropertyExpression;
 import com.blazebit.persistence.parser.expression.SubqueryExpression;
 import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 import javax.persistence.Tuple;
 import java.lang.reflect.Constructor;
@@ -407,7 +408,7 @@ public class SelectManager<T> extends AbstractManager<SelectInfo> {
         return subqueryBuilder;
     }
 
-    <X> CaseWhenStarterBuilder<X> selectCase(X builder, final String selectAlias) {
+    <X extends ServiceProvider> CaseWhenStarterBuilder<X> selectCase(X builder, final String selectAlias) {
         verifyBuilderEnded();
         clearDefaultSelects();
 

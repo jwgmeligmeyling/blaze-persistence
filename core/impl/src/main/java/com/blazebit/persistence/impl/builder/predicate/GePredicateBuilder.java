@@ -24,13 +24,14 @@ import com.blazebit.persistence.parser.expression.ExpressionFactory;
 import com.blazebit.persistence.parser.predicate.PredicateQuantifier;
 import com.blazebit.persistence.parser.predicate.GePredicate;
 import com.blazebit.persistence.parser.predicate.QuantifiableBinaryExpressionPredicate;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class GePredicateBuilder<T> extends AbstractQuantifiablePredicateBuilder<T> {
+public class GePredicateBuilder<T extends ServiceProvider> extends AbstractQuantifiablePredicateBuilder<T> {
 
     public GePredicateBuilder(T result, PredicateBuilderEndedListener listener, Expression leftExpression, SubqueryInitiatorFactory subqueryInitFactory, ExpressionFactory expressionFactory, ParameterManager parameterManager, ClauseType clauseType) {
         super(result, listener, leftExpression, false, subqueryInitFactory, expressionFactory, parameterManager, clauseType);

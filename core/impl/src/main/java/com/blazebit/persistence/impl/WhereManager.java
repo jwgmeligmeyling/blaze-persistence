@@ -19,13 +19,14 @@ package com.blazebit.persistence.impl;
 import com.blazebit.persistence.WhereOrBuilder;
 import com.blazebit.persistence.impl.builder.predicate.WhereOrBuilderImpl;
 import com.blazebit.persistence.parser.expression.ExpressionFactory;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class WhereManager<T> extends PredicateManager<T> {
+public class WhereManager<T extends ServiceProvider> extends PredicateManager<T> {
 
     WhereManager(ResolvingQueryGenerator queryGenerator, ParameterManager parameterManager, SubqueryInitiatorFactory subqueryInitFactory, ExpressionFactory expressionFactory) {
         super(queryGenerator, parameterManager, subqueryInitFactory, expressionFactory);

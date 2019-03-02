@@ -48,6 +48,7 @@ import com.blazebit.persistence.parser.predicate.Predicate;
 import com.blazebit.persistence.parser.predicate.PredicateBuilder;
 import com.blazebit.persistence.parser.predicate.PredicateQuantifier;
 import com.blazebit.persistence.parser.predicate.QuantifiableBinaryExpressionPredicate;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 import javax.persistence.metamodel.EntityType;
 import java.util.Collection;
@@ -58,7 +59,7 @@ import java.util.Collection;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public abstract class AbstractQuantifiablePredicateBuilder<T> extends SubqueryAndExpressionBuilderListener<T> implements QuantifiableBinaryPredicateBuilder<T>, PredicateBuilder {
+public abstract class AbstractQuantifiablePredicateBuilder<T extends ServiceProvider> extends SubqueryAndExpressionBuilderListener<T> implements QuantifiableBinaryPredicateBuilder<T>, PredicateBuilder {
 
     protected final Expression leftExpression;
     protected final SubqueryInitiatorFactory subqueryInitFactory;
@@ -375,5 +376,10 @@ public abstract class AbstractQuantifiablePredicateBuilder<T> extends SubqueryAn
         }
 
         listener.onBuilderEnded(AbstractQuantifiablePredicateBuilder.this);
+    }
+
+    @Override
+    public <T> T getService(Class<T> serviceClass) {
+        return result.getService(serviceClass);
     }
 }

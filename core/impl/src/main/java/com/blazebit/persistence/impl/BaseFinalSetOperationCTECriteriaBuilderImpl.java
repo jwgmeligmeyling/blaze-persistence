@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.blazebit.persistence.BaseFinalSetOperationBuilder;
 import com.blazebit.persistence.BaseOngoingFinalSetOperationBuilder;
+import com.blazebit.persistence.spi.ServiceProvider;
 import com.blazebit.persistence.spi.SetOperationType;
 
 /**
@@ -28,7 +29,7 @@ import com.blazebit.persistence.spi.SetOperationType;
  * @author Christian Beikov
  * @since 1.1.0
  */
-public abstract class BaseFinalSetOperationCTECriteriaBuilderImpl<T, X extends BaseFinalSetOperationBuilder<T, X>> extends BaseFinalSetOperationBuilderImpl<T, X, BaseFinalSetOperationCTECriteriaBuilderImpl<T, X>> implements BaseOngoingFinalSetOperationBuilder<T, X>, CTEInfoBuilder {
+public abstract class BaseFinalSetOperationCTECriteriaBuilderImpl<T, X extends BaseFinalSetOperationBuilder<T, X> & ServiceProvider> extends BaseFinalSetOperationBuilderImpl<T, X, BaseFinalSetOperationCTECriteriaBuilderImpl<T, X>> implements BaseOngoingFinalSetOperationBuilder<T, X>, CTEInfoBuilder {
 
     protected final T result;
     protected final CTEBuilderListener listener;

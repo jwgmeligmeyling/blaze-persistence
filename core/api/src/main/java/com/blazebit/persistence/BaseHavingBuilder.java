@@ -26,7 +26,7 @@ import com.blazebit.persistence.spi.ServiceProvider;
  * @author Christian Beikov
  * @since 1.0.0
  */
-public interface BaseHavingBuilder<T extends BaseHavingBuilder<T>> extends ServiceProvider {
+public interface BaseHavingBuilder<T extends BaseHavingBuilder<T> & ServiceProvider> extends ServiceProvider {
 
     /**
      * Starts a {@link SubqueryInitiator} for the left hand side of a predicate.

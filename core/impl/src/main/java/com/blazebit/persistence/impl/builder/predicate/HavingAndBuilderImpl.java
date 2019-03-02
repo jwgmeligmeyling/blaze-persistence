@@ -40,6 +40,7 @@ import com.blazebit.persistence.parser.predicate.CompoundPredicate;
 import com.blazebit.persistence.parser.predicate.ExistsPredicate;
 import com.blazebit.persistence.parser.predicate.Predicate;
 import com.blazebit.persistence.parser.predicate.PredicateBuilder;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
@@ -47,7 +48,7 @@ import com.blazebit.persistence.parser.predicate.PredicateBuilder;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class HavingAndBuilderImpl<T> extends PredicateAndSubqueryBuilderEndedListener<T> implements HavingAndBuilder<T>, PredicateBuilder {
+public class HavingAndBuilderImpl<T extends ServiceProvider> extends PredicateAndSubqueryBuilderEndedListener<T> implements HavingAndBuilder<T>, PredicateBuilder {
 
     private final T result;
     private final PredicateBuilderEndedListener listener;
@@ -187,5 +188,10 @@ public class HavingAndBuilderImpl<T> extends PredicateAndSubqueryBuilderEndedLis
         if (caseExpressionBuilderListener != null) {
             caseExpressionBuilderListener.verifyBuilderEnded();
         }
+    }
+
+    @Override
+    public <T> T getService(Class<T> serviceClass) {
+        return result.getService(serviceClass);
     }
 }

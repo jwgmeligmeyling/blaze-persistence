@@ -126,7 +126,7 @@ import java.util.logging.Logger;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public abstract class AbstractCommonQueryBuilder<QueryResultType, BuilderType, SetReturn, SubquerySetReturn, FinalSetReturn extends BaseFinalSetOperationBuilderImpl<?, ?, ?>> implements ServiceProvider, ConfigurationSource {
+public abstract class AbstractCommonQueryBuilder<QueryResultType, BuilderType extends ServiceProvider, SetReturn, SubquerySetReturn, FinalSetReturn extends BaseFinalSetOperationBuilderImpl<?, ?, ?>> implements ServiceProvider, ConfigurationSource {
 
     public static final String ID_PARAM_NAME = "ids";
 

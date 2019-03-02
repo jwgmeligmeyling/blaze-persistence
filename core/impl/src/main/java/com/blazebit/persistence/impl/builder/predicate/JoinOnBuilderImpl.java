@@ -34,13 +34,14 @@ import com.blazebit.persistence.parser.expression.Expression;
 import com.blazebit.persistence.parser.expression.ExpressionFactory;
 import com.blazebit.persistence.parser.predicate.Predicate;
 import com.blazebit.persistence.parser.predicate.PredicateBuilder;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class JoinOnBuilderImpl<T> implements JoinOnBuilder<T>, PredicateBuilder {
+public class JoinOnBuilderImpl<T extends ServiceProvider> implements JoinOnBuilder<T>, PredicateBuilder {
 
     private final T result;
     private final RootPredicate rootPredicate;
@@ -118,5 +119,10 @@ public class JoinOnBuilderImpl<T> implements JoinOnBuilder<T>, PredicateBuilder 
     @Override
     public JoinOnOrBuilder<JoinOnBuilder<T>> onOr() {
         return rootPredicate.startBuilder(new JoinOnOrBuilderImpl<JoinOnBuilder<T>>(this, rootPredicate, expressionFactory, parameterManager, subqueryInitFactory));
+    }
+
+    @Override
+    public <T> T getService(Class<T> serviceClass) {
+        return result.getService(serviceClass);
     }
 }

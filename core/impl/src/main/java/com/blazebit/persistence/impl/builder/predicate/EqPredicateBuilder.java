@@ -24,13 +24,14 @@ import com.blazebit.persistence.parser.expression.ExpressionFactory;
 import com.blazebit.persistence.parser.predicate.PredicateQuantifier;
 import com.blazebit.persistence.parser.predicate.EqPredicate;
 import com.blazebit.persistence.parser.predicate.QuantifiableBinaryExpressionPredicate;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class EqPredicateBuilder<T> extends AbstractQuantifiablePredicateBuilder<T> {
+public class EqPredicateBuilder<T extends ServiceProvider> extends AbstractQuantifiablePredicateBuilder<T> {
 
     public EqPredicateBuilder(T result, PredicateBuilderEndedListener listener, Expression leftExpression, boolean wrapNot, SubqueryInitiatorFactory subqueryInitFactory, ExpressionFactory expressionFactory, ParameterManager parameterManager, ClauseType clauseType) {
         super(result, listener, leftExpression, wrapNot, subqueryInitFactory, expressionFactory, parameterManager, clauseType);

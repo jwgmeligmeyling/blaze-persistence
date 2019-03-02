@@ -18,13 +18,14 @@ package com.blazebit.persistence.impl.builder.expression;
 
 import com.blazebit.persistence.EscapeBuilder;
 import com.blazebit.persistence.impl.BuilderChainingException;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class EscapeBuilderImpl<T> implements EscapeBuilder<T> {
+public class EscapeBuilderImpl<T extends ServiceProvider> implements EscapeBuilder<T> {
 
     private final EscapeBuilderImplEndedListener listener;
     private final T result;
@@ -81,5 +82,11 @@ public class EscapeBuilderImpl<T> implements EscapeBuilder<T> {
             }
             currentBuilder = null;
         }
+    }
+
+
+    @Override
+    public <T> T getService(Class<T> serviceClass) {
+        return result.getService(serviceClass);
     }
 }

@@ -63,6 +63,7 @@ import com.blazebit.persistence.spi.ExtendedAttribute;
 import com.blazebit.persistence.spi.ExtendedManagedType;
 import com.blazebit.persistence.spi.JpaMetamodelAccessor;
 import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.spi.ServiceProvider;
 import com.blazebit.reflection.PropertyPathExpression;
 
 import javax.persistence.metamodel.Attribute;
@@ -1510,11 +1511,11 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
         return null;
     }
 
-    <X> JoinOnBuilder<X> joinOn(X result, String base, Class<?> clazz, String alias, JoinType type) {
+    <X extends ServiceProvider> JoinOnBuilder<X> joinOn(X result, String base, Class<?> clazz, String alias, JoinType type) {
         return joinOn(result, base, metamodel.entity(clazz), alias, type);
     }
 
-    <X> JoinOnBuilder<X> joinOn(X result, String base, EntityType<?> entityType, String alias, JoinType type) {
+    <X extends ServiceProvider> JoinOnBuilder<X> joinOn(X result, String base, EntityType<?> entityType, String alias, JoinType type) {
         PathExpression basePath = expressionFactory.createPathExpression(base);
 
         if (alias == null || alias.isEmpty()) {
@@ -1568,7 +1569,7 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
         return joinOnBuilderListener.startBuilder(new JoinOnBuilderImpl<X>(result, joinOnBuilderListener, parameterManager, expressionFactory, subqueryInitFactory));
     }
 
-    <X> JoinOnBuilder<X> joinOn(X result, String path, String alias, JoinType type, boolean defaultJoin) {
+    <X extends ServiceProvider> JoinOnBuilder<X> joinOn(X result, String path, String alias, JoinType type, boolean defaultJoin) {
         joinOnBuilderListener.joinNode = join(path, alias, type, false, defaultJoin);
         return joinOnBuilderListener.startBuilder(new JoinOnBuilderImpl<X>(result, joinOnBuilderListener, parameterManager, expressionFactory, subqueryInitFactory));
     }

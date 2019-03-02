@@ -27,13 +27,14 @@ import com.blazebit.persistence.parser.predicate.CompoundPredicate;
 import com.blazebit.persistence.parser.expression.Expression;
 import com.blazebit.persistence.parser.expression.ExpressionFactory;
 import com.blazebit.persistence.parser.predicate.PredicateBuilder;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class JoinOnOrBuilderImpl<T> extends PredicateAndSubqueryBuilderEndedListener<T> implements JoinOnOrBuilder<T>, PredicateBuilder {
+public class JoinOnOrBuilderImpl<T extends ServiceProvider> extends PredicateAndSubqueryBuilderEndedListener<T> implements JoinOnOrBuilder<T>, PredicateBuilder {
 
     private final T result;
     private final PredicateBuilderEndedListener listener;
@@ -79,4 +80,8 @@ public class JoinOnOrBuilderImpl<T> extends PredicateAndSubqueryBuilderEndedList
         return expression;
     }
 
+    @Override
+    public <T> T getService(Class<T> serviceClass) {
+        return result.getService(serviceClass);
+    }
 }

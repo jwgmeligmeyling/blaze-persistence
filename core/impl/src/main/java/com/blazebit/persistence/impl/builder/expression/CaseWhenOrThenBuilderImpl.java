@@ -40,6 +40,7 @@ import com.blazebit.persistence.parser.expression.WhenClauseExpression;
 import com.blazebit.persistence.parser.predicate.CompoundPredicate;
 import com.blazebit.persistence.parser.predicate.ExistsPredicate;
 import com.blazebit.persistence.parser.predicate.PredicateBuilder;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  *
@@ -47,7 +48,7 @@ import com.blazebit.persistence.parser.predicate.PredicateBuilder;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public class CaseWhenOrThenBuilderImpl<T extends CaseWhenBuilder<?>> extends PredicateBuilderEndedListenerImpl implements CaseWhenOrThenBuilder<T>, ExpressionBuilder {
+public class CaseWhenOrThenBuilderImpl<T extends CaseWhenBuilder<?> & ServiceProvider> extends PredicateBuilderEndedListenerImpl implements CaseWhenOrThenBuilder<T>, ExpressionBuilder {
 
     private final T result;
     private final SubqueryInitiatorFactory subqueryInitFactory;
@@ -184,4 +185,8 @@ public class CaseWhenOrThenBuilderImpl<T extends CaseWhenBuilder<?>> extends Pre
         return whenClause;
     }
 
+    @Override
+    public <T> T getService(Class<T> serviceClass) {
+        return result.getService(serviceClass);
+    }
 }

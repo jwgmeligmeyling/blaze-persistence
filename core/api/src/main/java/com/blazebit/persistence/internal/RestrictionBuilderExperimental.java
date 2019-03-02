@@ -21,6 +21,7 @@ import com.blazebit.persistence.MultipleSubqueryInitiator;
 import com.blazebit.persistence.RestrictionBuilder;
 import com.blazebit.persistence.SubqueryBuilder;
 import com.blazebit.persistence.SubqueryInitiator;
+import com.blazebit.persistence.spi.ServiceProvider;
 
 /**
  * This interface contains experimental restriction builder methods.
@@ -29,7 +30,7 @@ import com.blazebit.persistence.SubqueryInitiator;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public interface RestrictionBuilderExperimental<T> extends RestrictionBuilder<T> {
+public interface RestrictionBuilderExperimental<T extends ServiceProvider> extends RestrictionBuilder<T> {
 
     /**
      * Starts a {@link SubqueryInitiator} for the right hand side of the IN predicate.

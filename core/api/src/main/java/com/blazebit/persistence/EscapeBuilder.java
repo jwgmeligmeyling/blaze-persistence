@@ -16,6 +16,8 @@
 
 package com.blazebit.persistence;
 
+import com.blazebit.persistence.spi.ServiceProvider;
+
 /**
  * A builder for the escape part of a like predicate.
  *
@@ -24,7 +26,7 @@ package com.blazebit.persistence;
  * @author Moritz Becker
  * @since 1.0.0
  */
-public interface EscapeBuilder<T> {
+public interface EscapeBuilder<T> extends ServiceProvider {
 
     /**
      * Sets the given character as the escape character.
