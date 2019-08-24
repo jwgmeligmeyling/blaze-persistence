@@ -73,7 +73,9 @@ public class MySQLDatabaseCleaner implements DatabaseCleaner {
         try (Statement s = c.createStatement()) {
             // Collect schema names
             LOG.log(Level.FINEST, "Collect table names: START");
-            ResultSet rs = s.executeQuery("SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA NOT IN (" + SYSTEM_SCHEMAS + ")");
+//            ResultSet rs = s.executeQuery("SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA NOT IN (" + SYSTEM_SCHEMAS + ")");
+            // TODO: Fix
+            ResultSet rs = s.executeQuery("SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'public'");
             StringBuilder sb = new StringBuilder();
             sb.append("DROP TABLE ");
 
