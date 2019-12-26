@@ -53,7 +53,8 @@ public class HibernateSQLFunctionAdapter implements JpqlFunction {
         if (firstArgumentType == null) {
             return null;
         }
-        Type type = sfi.getTypeHelper().basic(firstArgumentType);
+        sfi.getTypeConfiguration()
+        Type type = sfi.getTypeConfiguration().getBasicTypeRegistry().getRegisteredType(firstArgumentType);
         if (type == null) {
             if (sfi.getEntityPersisters().get(firstArgumentType.getName()) != null) {
                 type = sfi.getTypeHelper().entity(firstArgumentType);

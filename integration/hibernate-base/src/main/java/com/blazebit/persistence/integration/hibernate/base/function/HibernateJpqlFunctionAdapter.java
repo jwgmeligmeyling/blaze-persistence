@@ -21,6 +21,12 @@ import org.hibernate.QueryException;
 import org.hibernate.dialect.function.SQLFunction;
 import org.hibernate.engine.spi.Mapping;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.metamodel.model.domain.AllowableFunctionReturnType;
+import org.hibernate.query.sqm.NodeBuilder;
+import org.hibernate.query.sqm.function.SqmFunction;
+import org.hibernate.query.sqm.produce.function.internal.SelfRenderingSqmFunction;
+import org.hibernate.query.sqm.produce.function.spi.SelfRenderingFunctionSupport;
+import org.hibernate.query.sqm.tree.expression.AbstractSqmExpression;
 import org.hibernate.type.Type;
 
 import java.util.List;
@@ -30,11 +36,17 @@ import java.util.List;
  * @author Christian Beikov
  * @since 1.0.0
  */
-public class HibernateJpqlFunctionAdapter implements SQLFunction {
+public class HibernateJpqlFunctionAdapter extends SelfRenderingSqmFunction implements SqmFunction {
     
     private final JpqlFunction function;
 
+//    public HibernateJpqlFunctionAdapter(JpqlFunction function) {
+//        this.function = function;
+//    }
+
+
     public HibernateJpqlFunctionAdapter(JpqlFunction function) {
+        super(renderingSupport, arguments, impliedResultType, nodeBuilder, function.nam);
         this.function = function;
     }
 
@@ -42,17 +54,20 @@ public class HibernateJpqlFunctionAdapter implements SQLFunction {
         return function;
     }
 
-    @Override
+
+
+
+//    @Override
     public boolean hasArguments() {
         return function.hasArguments();
     }
 
-    @Override
+//    @Override
     public boolean hasParenthesesIfNoArguments() {
         return function.hasParenthesesIfNoArguments();
     }
 
-    @Override
+//    @Override
     public Type getReturnType(Type firstArgumentType, Mapping mapping) throws QueryException {
         SessionFactoryImplementor sfi = (SessionFactoryImplementor) mapping;
         Class<?> argumentClass;
@@ -84,7 +99,7 @@ public class HibernateJpqlFunctionAdapter implements SQLFunction {
         return sfi.getTypeHelper().custom(returnType);
     }
 
-    @Override
+//    @Override
     @SuppressWarnings("rawtypes")
     public String render(Type firstArgumentType, List args, SessionFactoryImplementor factory) throws QueryException {
         HibernateFunctionRenderContext context = new HibernateFunctionRenderContext(args);

@@ -24,11 +24,13 @@ import com.blazebit.persistence.integration.hibernate.base.SimpleDatabase;
 import com.blazebit.persistence.integration.hibernate.base.TableNameFormatter;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.model.relational.Namespace;
+import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
 import org.hibernate.persister.spi.PersisterClassResolver;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
 import java.util.ArrayList;
@@ -43,11 +45,11 @@ import java.util.List;
 public class Hibernate60Integrator implements Integrator {
 
     @Override
-    public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
+    public void integrate(Metadata metadata, BootstrapContext bootstrapContext, SessionFactoryImplementor sessionFactory) {
         List<PersistentClass> invalidPolymorphicCtes = new ArrayList<>();
         for (PersistentClass clazz : metadata.getEntityBindings()) {
             Class<?> entityClass = clazz.getMappedClass();
-            
+
             if (entityClass != null && entityClass.isAnnotationPresent(CTE.class)) {
                 if (clazz.isPolymorphic()) {
                     invalidPolymorphicCtes.add(clazz);
@@ -66,6 +68,7 @@ public class Hibernate60Integrator implements Integrator {
             throw new RuntimeException(sb.toString());
         }
 
+        ServiceRegistryImplementor serviceRegistry = sessionFactory.getServiceRegistry();
         serviceRegistry.locateServiceBinding(PersisterClassResolver.class).setService(new CustomPersisterClassResolver());
         TableNameFormatter formatter = new NativeTableNameFormatter(sessionFactory.getJdbcServices().getJdbcEnvironment().getQualifiedObjectNameFormatter());
         serviceRegistry.locateServiceBinding(Database.class).setService(new SimpleDatabase(getTableIterator(metadata.getDatabase().getNamespaces()), sessionFactory.getJdbcServices().getDialect(), formatter, metadata));

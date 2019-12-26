@@ -19,6 +19,7 @@ package com.blazebit.persistence.integration.hibernate;
 import com.blazebit.persistence.integration.hibernate.base.CustomCollectionPersister;
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
+import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.cache.spi.access.CollectionRegionAccessStrategy;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
@@ -34,7 +35,7 @@ import org.hibernate.persister.spi.PersisterCreationContext;
  */
 public class CustomOneToManyPersister extends OneToManyPersister implements CustomCollectionPersister {
 
-    public CustomOneToManyPersister(Collection collectionBinding, CollectionRegionAccessStrategy cacheAccessStrategy, PersisterCreationContext creationContext) throws MappingException, CacheException {
+    public CustomOneToManyPersister(Collection collectionBinding, CollectionDataAccess cacheAccessStrategy, PersisterCreationContext creationContext) throws MappingException, CacheException {
         super(collectionBinding, cacheAccessStrategy, creationContext);
     }
 

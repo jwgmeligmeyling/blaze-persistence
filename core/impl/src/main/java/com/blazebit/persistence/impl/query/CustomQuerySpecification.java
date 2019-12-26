@@ -183,7 +183,7 @@ public class CustomQuerySpecification<T> implements QuerySpecification<T> {
         Map<String, String> tableNameRemapping = new LinkedHashMap<String, String>(0);
 
         StringBuilder sb = new StringBuilder(ctes.size() * 100);
-        sb.append(dbmsDialect.getWithClause(recursive));
+        sb.append(dbmsDialect. getWithClause(recursive));
         sb.append(" ");
 
         boolean firstCte = true;

@@ -23,6 +23,7 @@ import com.blazebit.persistence.spi.JpaMetamodelAccessor;
 import com.blazebit.persistence.spi.JpaProvider;
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.CascadingAction;
+import org.hibernate.engine.spi.CascadingActions;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.Mapping;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -1274,7 +1275,7 @@ public class HibernateJpaProvider implements JpaProvider {
             EntityMetamodel entityMetamodel = entityPersister.getEntityMetamodel();
             Integer index = entityMetamodel.getPropertyIndexOrNull(attributeName);
             if (index != null) {
-                return entityMetamodel.getCascadeStyles()[index].doCascade(CascadingAction.DELETE);
+                return entityMetamodel.getCascadeStyles()[index].doCascade(CascadingActions.DELETE);
             }
         }
 
@@ -1304,7 +1305,7 @@ public class HibernateJpaProvider implements JpaProvider {
                 break;
             }
         }
-        return componentType.getCascadeStyle(propertyIndex).doCascade(CascadingAction.DELETE);
+        return componentType.getCascadeStyle(propertyIndex).doCascade(CascadingActions.DELETE);
     }
 
     @Override

@@ -39,7 +39,6 @@ import org.hibernate.engine.jdbc.env.spi.SchemaNameResolver;
 import org.hibernate.exception.spi.SQLExceptionConversionDelegate;
 import org.hibernate.exception.spi.SQLExceptionConverter;
 import org.hibernate.exception.spi.ViolatedConstraintNameExtracter;
-import org.hibernate.hql.spi.id.MultiTableBulkIdStrategy;
 import org.hibernate.loader.BatchLoadSizingStrategy;
 import org.hibernate.mapping.Constraint;
 import org.hibernate.mapping.ForeignKey;
@@ -359,11 +358,6 @@ public class Hibernate60DelegatingDialect extends Dialect {
     @Override
     public String getCreateMultisetTableString() {
         return delegate.getCreateMultisetTableString();
-    }
-
-    @Override
-    public MultiTableBulkIdStrategy getDefaultMultiTableBulkIdStrategy() {
-        return delegate.getDefaultMultiTableBulkIdStrategy();
     }
 
     @Override
