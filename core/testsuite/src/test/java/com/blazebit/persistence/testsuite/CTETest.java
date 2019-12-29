@@ -715,6 +715,35 @@ public class CTETest extends AbstractCoreTest {
         cb.getResultList();
     }
 
+
+    @Test
+    // NOTE: H2 does not support the PARTITION clause in the ROW_NUMBER function, so we can't emulate EXCEPT ALL
+    @Category({ NoDatanucleus.class, NoEclipselink.class, NoOpenJPA.class, NoMySQL.class })
+    public void testWithStartSetUnionAll() {
+        CriteriaBuilder<TestCTE> cb = cbf.create(em, TestCTE.class).with(TestCTE.class)
+                .from(RecursiveEntity.class, "e")
+                .bind("id").select("e.id")
+                .bind("name").select("e.name")
+                .bind("level").select("0")
+                .unionAll()
+                .from(RecursiveEntity.class, "e")
+                .bind("id").select("e.id")
+                .bind("name").select("e.name")
+                .bind("level").select("0")
+                .endSet()
+                .end();
+
+        String expected = ""
+                + "WITH " + TestCTE.class.getSimpleName() + "(id, name, level) AS(\n"
+                + "(SELECT e.id, e.name, 0 FROM RecursiveEntity e\n"
+                + "UNION ALL\n"
+                + "SELECT e.id, e.name, 0 FROM RecursiveEntity e)\n"
+                + ")\n"
+                + "SELECT testCTE FROM " + TestCTE.class.getSimpleName() + " testCTE";
+        assertEquals(expected, cb.getQueryString());
+        cb.getResultList();
+    }
+
     @Test
     // NOTE: H2 does not support the PARTITION clause in the ROW_NUMBER function, so we can't emulate EXCEPT ALL
     @Category({ NoDatanucleus.class, NoEclipselink.class, NoOpenJPA.class, NoH2.class, NoMySQL.class })

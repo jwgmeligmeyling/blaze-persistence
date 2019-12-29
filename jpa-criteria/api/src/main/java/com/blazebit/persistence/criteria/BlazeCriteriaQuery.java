@@ -33,7 +33,7 @@ import java.util.List;
  * @author Christian Beikov
  * @since 1.2.0
  */
-public interface BlazeCriteriaQuery<T> extends CriteriaQuery<T>, BlazeAbstractQuery<T> {
+public interface BlazeCriteriaQuery<T> extends CriteriaQuery<T>, BlazeAbstractQuery<T>, BlazeSetOperationCriteria<BlazeCriteriaQuery<T>> {
 
     /**
      * Create a Blaze-Persistence Core {@link CriteriaBuilder} from this query.
