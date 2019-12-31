@@ -16,12 +16,13 @@
 
 package com.blazebit.persistence.criteria.impl;
 
+import com.blazebit.persistence.BaseOngoingSetOperationBuilder;
 import com.blazebit.persistence.CriteriaBuilder;
+import com.blazebit.persistence.FinalSetOperationCTECriteriaBuilder;
 import com.blazebit.persistence.FullSelectCTECriteriaBuilder;
 import com.blazebit.persistence.LeafOngoingSetOperationCTECriteriaBuilder;
 import com.blazebit.persistence.SelectBaseCTECriteriaBuilder;
 import com.blazebit.persistence.SetOperationBuilder;
-import com.blazebit.persistence.StartOngoingSetOperationBuilder;
 import com.blazebit.persistence.criteria.BlazeFullSelectCTECriteria;
 import com.blazebit.persistence.spi.SetOperationType;
 
@@ -79,49 +80,77 @@ public class BlazeFullSelectCTECriteriaImpl<T> extends AbstractBlazeSelectBaseCT
     }
 
     @Override
-    public <X> CriteriaBuilder<X> render(CriteriaBuilder<X> cbs) {
-        return super.render(cbs);
+    protected <X> CriteriaBuilder<X> renderAndFinalize(FullSelectCTECriteriaBuilder<CriteriaBuilder<X>> fullSelectCTECriteriaBuilder, RenderContextImpl context) {
+        Object render = render(fullSelectCTECriteriaBuilder, context);
+        if (! setFragments.isEmpty()) {
+            // TODO Unfortunately, in this case we're dealing with a FinalSetOperationCTECriteriaBuilder that
+            //  already closed the FullSelectCTECriteriaBuilder
+            return (CriteriaBuilder<X>) render;
+        }
+        return ((FullSelectCTECriteriaBuilder<CriteriaBuilder<X>>) render).end();
     }
 
     @Override
-    protected void render(SelectBaseCTECriteriaBuilder<?> fullSelectCTECriteriaBuilder, RenderContextImpl context) {
-        super.render(fullSelectCTECriteriaBuilder, context);
-        if (fullSelectCTECriteriaBuilder instanceof FullSelectCTECriteriaBuilder) {
-            renderSetFragments((FullSelectCTECriteriaBuilder) fullSelectCTECriteriaBuilder, context);
+    protected <CB extends SelectBaseCTECriteriaBuilder<?>> Object render(CB fullSelectCTECriteriaBuilder, RenderContextImpl context) {
+        Object render = super.render(fullSelectCTECriteriaBuilder, context);
+        if (! setFragments.isEmpty()) {
+            return renderSetFragments((SetOperationBuilder) render, context);
         }
+        return render;
     }
 
-    private void renderSetFragments(FullSelectCTECriteriaBuilder<?> fullSelectCTECriteriaBuilder, RenderContextImpl context) {
-        LeafOngoingSetOperationCTECriteriaBuilder<?> cb = null;
+    // TODO: There is no interface that combines SetOperationBuilder and SelectBaseCTECriteriaBuilder
+    // TODO: There is no generic assignment that satisfies all subtypes of SelectBaseCTECriteriaBuilder
+    //   (i.e. both FullSelectCTECriteriaBuilderImpl and StartOngoingSetOperationCTECriteriaBuilderImpl)
+    // TODO: Should we even pursue a recursive rendering approach based on the existing criteria API?
+    //  Perhaps some type changes are required to neatly do this...
+    private <X> X renderSetFragments(SetOperationBuilder<?, ?> /* & SelectBaseCTECriteriaBuilder */ fullSelectCTECriteriaBuilder, RenderContextImpl context) {
+        System.out.println(fullSelectCTECriteriaBuilder.getClass());
+        BaseOngoingSetOperationBuilder cb = null;
+
         for (Map.Entry<SetOperationType, BlazeFullSelectCTECriteriaImpl<T>> entry : setFragments.entrySet()) {
             SetOperationType type = entry.getKey();
             BlazeFullSelectCTECriteriaImpl<T> value = entry.getValue();
+
+            // Use start-X methods, because sets defined on set queries should take precedence
             switch (type) {
                 case UNION:
-                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).union();
+                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).startUnion();
                     break;
                 case UNION_ALL:
-                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).unionAll();
+                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).startUnionAll();
                     break;
                 case INTERSECT:
-                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).intersect();
+                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).startIntersect();
                     break;
                 case INTERSECT_ALL:
-                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).intersectAll();
+                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).startIntersectAll();
                     break;
                 case EXCEPT:
-                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).except();
+                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).startExcept();
                     break;
                 case EXCEPT_ALL:
-                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).exceptAll();
+                    cb = (cb == null ? fullSelectCTECriteriaBuilder : cb).startExceptAll();
                     break;
             }
 
-            value.render((SelectBaseCTECriteriaBuilder) cb, context);
+            cb = (BaseOngoingSetOperationBuilder) value.render((SelectBaseCTECriteriaBuilder) cb, context);
+            cb = (BaseOngoingSetOperationBuilder) cb.endSet();
         }
-        if (cb instanceof StartOngoingSetOperationBuilder) {
-            ((StartOngoingSetOperationBuilder) cb).endSet();
+
+        Object endSet = cb;
+
+        // TODO: Not the case for the recursive case, only alternative seemingly is to have separate methods for every subtype of SelectBaseCTECriteriaBuilder...
+        if (endSet instanceof LeafOngoingSetOperationCTECriteriaBuilder) {
+            endSet = ((LeafOngoingSetOperationCTECriteriaBuilder) endSet).endSet();
         }
+
+        if (endSet instanceof FinalSetOperationCTECriteriaBuilder) {
+            renderOrderBy((FinalSetOperationCTECriteriaBuilder) endSet, context);
+            endSet = ((FinalSetOperationCTECriteriaBuilder) endSet).end();
+        }
+
+        return (X) endSet;
     }
 
 }

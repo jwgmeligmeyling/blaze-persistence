@@ -149,28 +149,43 @@ public class CteTest extends AbstractCoreTest {
             testCTE.bind(TestCTE_.id, recursiveEntity.get(RecursiveEntity_.id));
             testCTE.bind(TestCTE_.name, recursiveEntity.get(RecursiveEntity_.name));
             testCTE.bind(TestCTE_.level, 0);
-            testCTE.where(recursiveEntity.get(RecursiveEntity_.parent).isNull());
+            testCTE.where(cb.equal(recursiveEntity.get(RecursiveEntity_.id), 1L));
         }
 
+        BlazeFullSelectCTECriteria<TestCTE> unionPart = testCTE.unionAll();
+
         {
-            BlazeFullSelectCTECriteria<TestCTE> recursivePart = testCTE.unionAll();
-            BlazeRoot<RecursiveEntity> recursiveEntity = recursivePart.from(RecursiveEntity.class, "e");
-            recursivePart.bind(TestCTE_.id, recursiveEntity.get(RecursiveEntity_.id));
-            recursivePart.bind(TestCTE_.name, recursiveEntity.get(RecursiveEntity_.name));
-            recursivePart.bind(TestCTE_.level, 0);
+            BlazeRoot<RecursiveEntity> recursiveEntity = unionPart.from(RecursiveEntity.class, "e");
+            unionPart.bind(TestCTE_.id, recursiveEntity.get(RecursiveEntity_.id));
+            unionPart.bind(TestCTE_.name, recursiveEntity.get(RecursiveEntity_.name));
+            unionPart.bind(TestCTE_.level, 0);
+            unionPart.where(cb.lessThan(recursiveEntity.get(RecursiveEntity_.id), 10L));
+
         }
+
+        BlazeFullSelectCTECriteria<TestCTE> exceptPart = unionPart.except();
+
+        {
+            BlazeRoot<RecursiveEntity> recursiveEntity = exceptPart.from(RecursiveEntity.class, "e");
+            exceptPart.bind(TestCTE_.id, recursiveEntity.get(RecursiveEntity_.id));
+            exceptPart.bind(TestCTE_.name, recursiveEntity.get(RecursiveEntity_.name));
+            exceptPart.bind(TestCTE_.level, 0);
+            exceptPart.where(cb.greaterThan(recursiveEntity.get(RecursiveEntity_.id), 5L));
+        }
+
 
         BlazeRoot<TestCTE> t = cq.from(TestCTE.class, "t");
         cq.where(cb.lessThan(t.get(TestCTE_.level), 2));
 
         CriteriaBuilder<?> criteriaBuilder = cq.createCriteriaBuilder(em);
-        String expected = ""
-                + "WITH RECURSIVE " + TestCTE.class.getSimpleName() + "(id, name, level) AS(\n"
-                + "SELECT e.id, e.name, 0 FROM RecursiveEntity e WHERE e.parent IS NULL"
-                + "\nUNION ALL\n"
-                + "SELECT e.id, e.name, t.level + 1 FROM " + TestCTE.class.getSimpleName() + " t" + innerJoinRecursive("RecursiveEntity e", "t.id = e.parent.id")
-                + "\n)\n"
-                + "SELECT t FROM " + TestCTE.class.getSimpleName() + " t WHERE t.level < 2";
+        String expected = "WITH TestCTE(id, name, level) AS(\n" +
+                "SELECT e.id, e.name, 0 FROM RecursiveEntity e WHERE e.id = 1L\n" +
+                "UNION ALL\n" +
+                "(SELECT e.id, e.name, 0 FROM RecursiveEntity e WHERE e.id < 10L\n" +
+                "EXCEPT\n" +
+                "SELECT e.id, e.name, 0 FROM RecursiveEntity e WHERE e.id > 5L)\n" +
+                ")\n" +
+                "SELECT t FROM TestCTE t WHERE t.level < 2";
 
         assertEquals(expected, criteriaBuilder.getQueryString());
     }

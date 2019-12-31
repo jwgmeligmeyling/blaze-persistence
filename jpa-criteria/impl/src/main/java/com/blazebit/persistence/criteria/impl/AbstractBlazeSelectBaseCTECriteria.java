@@ -18,6 +18,7 @@ package com.blazebit.persistence.criteria.impl;
 
 import com.blazebit.persistence.BaseSubqueryBuilder;
 import com.blazebit.persistence.CriteriaBuilder;
+import com.blazebit.persistence.FinalSetOperationCTECriteriaBuilder;
 import com.blazebit.persistence.FromBuilder;
 import com.blazebit.persistence.FullQueryBuilder;
 import com.blazebit.persistence.FullSelectCTECriteriaBuilder;
@@ -25,9 +26,13 @@ import com.blazebit.persistence.GroupByBuilder;
 import com.blazebit.persistence.HavingBuilder;
 import com.blazebit.persistence.JoinOnBuilder;
 import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.LeafOngoingFinalSetOperationCTECriteriaBuilder;
+import com.blazebit.persistence.LeafOngoingSetOperationCTECriteriaBuilder;
 import com.blazebit.persistence.MultipleSubqueryInitiator;
 import com.blazebit.persistence.OrderByBuilder;
 import com.blazebit.persistence.SelectBaseCTECriteriaBuilder;
+import com.blazebit.persistence.SetOperationBuilder;
+import com.blazebit.persistence.StartOngoingSetOperationCTECriteriaBuilder;
 import com.blazebit.persistence.SubqueryBuilder;
 import com.blazebit.persistence.SubqueryInitiator;
 import com.blazebit.persistence.WhereBuilder;
@@ -398,15 +403,20 @@ public abstract class AbstractBlazeSelectBaseCTECriteria<T> implements BlazeSele
     public <X> CriteriaBuilder<X> render(CriteriaBuilder<X> cbs) {
         FullSelectCTECriteriaBuilder<CriteriaBuilder<X>> fullSelectCTECriteriaBuilder = cbs.with(returnType);
         RenderContextImpl context = new RenderContextImpl();
-        render(fullSelectCTECriteriaBuilder, context);
-        return fullSelectCTECriteriaBuilder.end();
+        return renderAndFinalize(fullSelectCTECriteriaBuilder, context);
     }
 
-    protected void render(SelectBaseCTECriteriaBuilder<?> fullSelectCTECriteriaBuilder, RenderContextImpl context) {
+    protected <X> CriteriaBuilder<X> renderAndFinalize(FullSelectCTECriteriaBuilder<CriteriaBuilder<X>> fullSelectCTECriteriaBuilder, RenderContextImpl context) {
+        return ((FullSelectCTECriteriaBuilder<CriteriaBuilder<X>>) render(fullSelectCTECriteriaBuilder, context)).end();
+    }
+
+    protected <CB extends SelectBaseCTECriteriaBuilder<?>> Object render(CB fullSelectCTECriteriaBuilder, RenderContextImpl context) {
         renderFrom(fullSelectCTECriteriaBuilder, context);
         renderWhere(fullSelectCTECriteriaBuilder, context);
         renderGroupBy(fullSelectCTECriteriaBuilder, context);
         renderHaving(fullSelectCTECriteriaBuilder, context);
+
+        // TODO render against endSet result
         renderOrderBy(fullSelectCTECriteriaBuilder, context);
 
         context.setClauseType(RenderContext.ClauseType.SELECT);
@@ -447,6 +457,8 @@ public abstract class AbstractBlazeSelectBaseCTECriteria<T> implements BlazeSele
         for (Map.Entry<String, ParameterExpression<?>> entry : context.getExplicitParameterNameMapping().entrySet()) {
             fullSelectCTECriteriaBuilder.setParameterType(entry.getKey(), entry.getValue().getParameterType());
         }
+
+        return fullSelectCTECriteriaBuilder;
     }
 
 
@@ -772,7 +784,7 @@ public abstract class AbstractBlazeSelectBaseCTECriteria<T> implements BlazeSele
         }
     }
 
-    private void renderOrderBy(OrderByBuilder<?> ob, RenderContextImpl context) {
+    protected void renderOrderBy(OrderByBuilder<?> ob, RenderContextImpl context) {
         if (orderList == null) {
             return;
         }
