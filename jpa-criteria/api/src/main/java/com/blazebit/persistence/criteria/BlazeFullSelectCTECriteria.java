@@ -22,5 +22,5 @@ package com.blazebit.persistence.criteria;
  * @author Jan-Willem Gmelig Meyling
  * @since 1.4.0
  */
-public interface BlazeFullSelectCTECriteria<T> extends BlazeSelectBaseCTECriteria<T> {
+public interface BlazeFullSelectCTECriteria<T> extends BlazeSelectBaseCTECriteria<T>, BlazeSetOperationCriteria<BlazeFullSelectCTECriteria<T>> {
 }

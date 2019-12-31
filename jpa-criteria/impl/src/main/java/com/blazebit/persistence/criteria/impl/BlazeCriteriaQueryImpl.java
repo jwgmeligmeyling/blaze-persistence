@@ -24,6 +24,7 @@ import com.blazebit.persistence.criteria.BlazeOrder;
 import com.blazebit.persistence.criteria.BlazeRoot;
 import com.blazebit.persistence.criteria.BlazeSelectRecursiveCTECriteria;
 import com.blazebit.persistence.criteria.BlazeSubquery;
+import com.blazebit.persistence.spi.SetOperationType;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Tuple;
@@ -36,6 +37,7 @@ import javax.persistence.criteria.Selection;
 import javax.persistence.metamodel.EntityType;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -49,11 +51,13 @@ public class BlazeCriteriaQueryImpl<T> implements BlazeCriteriaQuery<T> {
 
     private final Class<T> returnType;
     private final InternalQuery<T> query;
+    private final LinkedHashMap<SetOperationType, BlazeCriteriaQueryImpl<T>> setFragments;
 
     public BlazeCriteriaQueryImpl(BlazeCriteriaBuilderImpl criteriaBuilder, Class<T> returnType) {
         this.criteriaBuilder = criteriaBuilder;
         this.returnType = returnType;
         this.query = new InternalQuery<T>(this, criteriaBuilder);
+        this.setFragments = new LinkedHashMap<>();
     }
 
     /* Select */
@@ -292,4 +296,33 @@ public class BlazeCriteriaQueryImpl<T> implements BlazeCriteriaQuery<T> {
         return query.withRecursive(clasz);
     }
 
+    @Override
+    public BlazeCriteriaQuery<T> union() {
+        return null;
+    }
+
+    @Override
+    public BlazeCriteriaQuery<T> unionAll() {
+        return null;
+    }
+
+    @Override
+    public BlazeCriteriaQuery<T> intersect() {
+        return null;
+    }
+
+    @Override
+    public BlazeCriteriaQuery<T> intersectAll() {
+        return null;
+    }
+
+    @Override
+    public BlazeCriteriaQuery<T> except() {
+        return null;
+    }
+
+    @Override
+    public BlazeCriteriaQuery<T> exceptAll() {
+        return null;
+    }
 }

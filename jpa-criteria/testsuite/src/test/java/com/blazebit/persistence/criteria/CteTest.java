@@ -33,12 +33,15 @@ import com.blazebit.persistence.testsuite.entity.TestAdvancedCTE1;
 import com.blazebit.persistence.testsuite.entity.TestAdvancedCTE1_;
 import com.blazebit.persistence.testsuite.entity.TestAdvancedCTE2;
 import com.blazebit.persistence.testsuite.entity.TestCTE;
+import com.blazebit.persistence.testsuite.entity.TestCTEEmbeddable;
 import com.blazebit.persistence.testsuite.entity.TestCTEEmbeddable_;
 import com.blazebit.persistence.testsuite.entity.TestCTE_;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import javax.persistence.criteria.Path;
 
 import static org.junit.Assert.assertEquals;
 
@@ -78,9 +81,10 @@ public class CteTest extends AbstractCoreTest {
         BlazeFullSelectCTECriteria<TestAdvancedCTE1> documentCte = cq.with(TestAdvancedCTE1.class);
         BlazeRoot<RecursiveEntity> recursiveEntity = documentCte.from(RecursiveEntity.class);
         documentCte.bind(TestAdvancedCTE1_.id, recursiveEntity.get(RecursiveEntity_.id));
-        documentCte.bind(documentCte.get(TestAdvancedCTE1_.embeddable).get(TestCTEEmbeddable_.name), recursiveEntity.get(RecursiveEntity_.name));
-        documentCte.bind(documentCte.get(TestAdvancedCTE1_.embeddable).get(TestCTEEmbeddable_.description), "desc");
-        documentCte.bind(documentCte.get(TestAdvancedCTE1_.embeddable).get(TestCTEEmbeddable_.recursiveEntity), recursiveEntity);
+        Path<TestCTEEmbeddable> embeddable = documentCte.get(TestAdvancedCTE1_.embeddable);
+        documentCte.bind(embeddable.get(TestCTEEmbeddable_.name), recursiveEntity.get(RecursiveEntity_.name));
+        documentCte.bind(embeddable.get(TestCTEEmbeddable_.description), "desc");
+        documentCte.bind(embeddable.get(TestCTEEmbeddable_.recursiveEntity), recursiveEntity);
         documentCte.bind(TestAdvancedCTE1_.level, cb.literal(0));
         documentCte.bind(TestAdvancedCTE1_.parent, recursiveEntity.get(RecursiveEntity_.parent));
 
@@ -127,6 +131,61 @@ public class CteTest extends AbstractCoreTest {
                 + "SELECT e.id, e.name, t.level + 1 FROM " + TestCTE.class.getSimpleName() + " t" + innerJoinRecursive("RecursiveEntity e", "t.id = e.parent.id")
                 + "\n)\n"
                 + "SELECT t FROM " + TestCTE.class.getSimpleName() + " t WHERE t.level < 2";
+
+        assertEquals(expected, criteriaBuilder.getQueryString());
+    }
+
+
+
+    @Test
+    public void testWithStartSetUnionAll() {
+        BlazeCriteriaQuery<TestCTE> cq = BlazeCriteria.get(cbf, TestCTE.class);
+        BlazeCriteriaBuilder cb = cq.getCriteriaBuilder();
+
+        BlazeFullSelectCTECriteria<TestCTE> testCTE = cq.with(TestCTE.class);
+
+        {
+            BlazeRoot<RecursiveEntity> recursiveEntity = testCTE.from(RecursiveEntity.class, "e");
+            testCTE.bind(TestCTE_.id, recursiveEntity.get(RecursiveEntity_.id));
+            testCTE.bind(TestCTE_.name, recursiveEntity.get(RecursiveEntity_.name));
+            testCTE.bind(TestCTE_.level, 0);
+            testCTE.where(cb.equal(recursiveEntity.get(RecursiveEntity_.id), 1L));
+        }
+
+        BlazeFullSelectCTECriteria<TestCTE> unionPart = testCTE.unionAll();
+
+        {
+            BlazeRoot<RecursiveEntity> recursiveEntity = unionPart.from(RecursiveEntity.class, "e");
+            unionPart.bind(TestCTE_.id, recursiveEntity.get(RecursiveEntity_.id));
+            unionPart.bind(TestCTE_.name, recursiveEntity.get(RecursiveEntity_.name));
+            unionPart.bind(TestCTE_.level, 0);
+            unionPart.where(cb.lessThan(recursiveEntity.get(RecursiveEntity_.id), 10L));
+
+        }
+
+        BlazeFullSelectCTECriteria<TestCTE> exceptPart = unionPart.except();
+
+        {
+            BlazeRoot<RecursiveEntity> recursiveEntity = exceptPart.from(RecursiveEntity.class, "e");
+            exceptPart.bind(TestCTE_.id, recursiveEntity.get(RecursiveEntity_.id));
+            exceptPart.bind(TestCTE_.name, recursiveEntity.get(RecursiveEntity_.name));
+            exceptPart.bind(TestCTE_.level, 0);
+            exceptPart.where(cb.greaterThan(recursiveEntity.get(RecursiveEntity_.id), 5L));
+        }
+
+
+        BlazeRoot<TestCTE> t = cq.from(TestCTE.class, "t");
+        cq.where(cb.lessThan(t.get(TestCTE_.level), 2));
+
+        CriteriaBuilder<?> criteriaBuilder = cq.createCriteriaBuilder(em);
+        String expected = "WITH TestCTE(id, name, level) AS(\n" +
+                "SELECT e.id, e.name, 0 FROM RecursiveEntity e WHERE e.id = 1L\n" +
+                "UNION ALL\n" +
+                "(SELECT e.id, e.name, 0 FROM RecursiveEntity e WHERE e.id < 10L\n" +
+                "EXCEPT\n" +
+                "SELECT e.id, e.name, 0 FROM RecursiveEntity e WHERE e.id > 5L)\n" +
+                ")\n" +
+                "SELECT t FROM TestCTE t WHERE t.level < 2";
 
         assertEquals(expected, criteriaBuilder.getQueryString());
     }
