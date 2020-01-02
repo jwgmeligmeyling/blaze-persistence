@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.blazebit.persistence.ParameterHolder;
 import com.blazebit.persistence.view.SubqueryProvider;
+import com.blazebit.persistence.view.SubqueryProviderFactory;
 
 /**
  * @author Christian Beikov

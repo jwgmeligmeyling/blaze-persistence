@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.blazebit.persistence.view.impl;
 
 import com.blazebit.persistence.ParameterHolder;
 import com.blazebit.persistence.view.CorrelationProvider;
+import com.blazebit.persistence.view.CorrelationProviderFactory;
 
 import java.lang.reflect.Constructor;
 import java.util.Map;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -273,7 +273,7 @@ public abstract class AbstractFullQueryBuilder<T, X extends FullQueryBuilder<T, 
             if (identifierExpressions == entityIdentifierExpressions) {
                 uniqueIdentifierExpressions = identifierExpressions;
             } else {
-                uniqueIdentifierExpressions = functionalDependencyAnalyzerVisitor.getFunctionalDependencyRootExpressions(whereManager.rootPredicate.getPredicate(), identifierExpressions);
+                uniqueIdentifierExpressions = functionalDependencyAnalyzerVisitor.getFunctionalDependencyRootExpressions(whereManager.rootPredicate.getPredicate(), identifierExpressions, joinManager.getRoots().get(0));
             }
         }
 
@@ -474,7 +474,7 @@ public abstract class AbstractFullQueryBuilder<T, X extends FullQueryBuilder<T, 
         StringBuilder sb = new StringBuilder();
 
         implicitJoinWhereClause();
-        functionalDependencyAnalyzerVisitor.clear(whereManager.rootPredicate.getPredicate());
+        functionalDependencyAnalyzerVisitor.clear(whereManager.rootPredicate.getPredicate(), joinManager.getRoots().get(0), true);
         functionalDependencyAnalyzerVisitor.analyzeFormsUniqueTuple(expression);
         queryGenerator.setQueryBuffer(sb);
         if (functionalDependencyAnalyzerVisitor.getSplittedOffExpressions().isEmpty()) {

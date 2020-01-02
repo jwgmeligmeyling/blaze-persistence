@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,11 @@ import java.math.BigInteger;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.NClob;
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -124,6 +126,20 @@ public class MutableBasicUserTypeRegistry implements BasicUserTypeRegistry {
         map = new HashMap<>();
         map.put(NClob.class, NClobTypeConverter.INSTANCE);
         converters.put(NClob.class, map);
+        map = new HashMap<>();
+        map.put(Calendar.class, DateToCalendarTypeConverter.JAVA_UTIL_CALENDAR_CONVERTER);
+        map.put(GregorianCalendar.class, DateToCalendarTypeConverter.JAVA_UTIL_GREGORIAN_CALENDAR_CONVERTER);
+        converters.put(Date.class, map);
+        map = new HashMap<>();
+        map.put(Date.class, CalendarToDateTypeConverter.JAVA_UTIL_CALENDAR_CONVERTER);
+        map.put(java.sql.Date.class, CalendarToDateTypeConverter.JAVA_UTIL_CALENDAR_CONVERTER);
+        map.put(Timestamp.class, CalendarToDateTypeConverter.JAVA_UTIL_CALENDAR_CONVERTER);
+        converters.put(Calendar.class, map);
+        map = new HashMap<>();
+        map.put(Date.class, CalendarToDateTypeConverter.JAVA_UTIL_GREGORIAN_CALENDAR_CONVERTER);
+        map.put(java.sql.Date.class, CalendarToDateTypeConverter.JAVA_UTIL_GREGORIAN_CALENDAR_CONVERTER);
+        map.put(Timestamp.class, CalendarToDateTypeConverter.JAVA_UTIL_GREGORIAN_CALENDAR_CONVERTER);
+        converters.put(GregorianCalendar.class, map);
 
         // Java 8 optional types
         try {

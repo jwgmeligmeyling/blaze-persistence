@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -461,5 +461,19 @@ public class JpaMetamodelUtils {
         }
 
         return false;
+    }
+
+    public static boolean isAssociation(Attribute<?, ?> attr) {
+        return attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.MANY_TO_ONE
+            || attr.getPersistentAttributeType() == Attribute.PersistentAttributeType.ONE_TO_ONE;
+    }
+
+    public static boolean isNullable(Attribute<?, ?> attr) {
+        if (attr.isCollection()) {
+            return true;
+        }
+
+        // !((SingularAttribute<?, ?>) attr).isId() is required as a workaround for Eclipselink
+        return ((SingularAttribute<?, ?>) attr).isOptional() && !((SingularAttribute<?, ?>) attr).isId();
     }
 }

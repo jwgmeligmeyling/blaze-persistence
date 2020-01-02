@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.blazebit.persistence.view.impl.macro;
 
 import com.blazebit.persistence.spi.FunctionRenderContext;
+import com.blazebit.persistence.view.spi.EmbeddingViewJpqlMacro;
 
 /**
  *
@@ -35,6 +36,7 @@ public class MutableEmbeddingViewJpqlMacro implements EmbeddingViewJpqlMacro {
         this.embeddingViewPath = embeddingViewPath;
     }
 
+    @Override
     public boolean usesEmbeddingView() {
         return used;
     }

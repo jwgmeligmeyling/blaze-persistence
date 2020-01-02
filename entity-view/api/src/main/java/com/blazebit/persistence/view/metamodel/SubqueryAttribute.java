@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.blazebit.persistence.view.metamodel;
 
 import com.blazebit.persistence.view.SubqueryProvider;
+import com.blazebit.persistence.view.SubqueryProviderFactory;
 
 /**
  * Instances of the type {@linkplain SubqueryAttribute} represents single-valued properties or fields.
@@ -27,6 +28,14 @@ import com.blazebit.persistence.view.SubqueryProvider;
  * @since 1.0.0
  */
 public interface SubqueryAttribute<X, Y> extends SingularAttribute<X, Y> {
+
+    /**
+     * Returns the subquery provider factory of the attribute.
+     *
+     * @return The subquery provider factory of the attribute
+     * @since 1.4.0
+     */
+    public SubqueryProviderFactory getSubqueryProviderFactory();
 
     /**
      * Returns the subquery provider of the attribute.

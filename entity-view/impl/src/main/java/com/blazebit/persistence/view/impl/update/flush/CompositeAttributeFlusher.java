@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -633,8 +633,13 @@ public class CompositeAttributeFlusher extends CompositeAttributeFetchGraphNode<
                 if ((loadForEntityFlush || viewIdAccessor == null) && !entityClass.isInstance(entity)) {
                     entity = entityLoader.toEntity(context, view, id);
                 }
+                // After Pre-Update the dirtyness could change
+                long dirtyMask = updatableProxy.$$_getSimpleDirty();
                 context.invokePreUpdate(updatableProxy);
                 runPreFlushListeners();
+                if (this.fullFlushers != this.flushers && dirtyMask != updatableProxy.$$_getSimpleDirty()) {
+                    updatableProxy.$$_copyDirty(this.fullFlushers, this.flushers);
+                }
             }
             Object[] state = updatableProxy.$$_getMutableState();
             boolean wasDirty = false;

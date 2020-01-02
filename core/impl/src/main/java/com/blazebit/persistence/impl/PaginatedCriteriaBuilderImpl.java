@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2019 Blazebit.
+ * Copyright 2014 - 2020 Blazebit.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -458,6 +458,7 @@ public class PaginatedCriteriaBuilderImpl<T> extends AbstractFullQueryBuilder<T,
         JoinVisitor joinVisitor = applyImplicitJoins(null);
         // We pass true here to always generate implicit group bys for select and order by clauses. We filter these out later if necessary
         applyExpressionTransformersAndBuildGroupByClauses(true, joinVisitor);
+        analyzeConstantifiedJoinNodes();
         hasCollections = joinManager.hasCollections();
 
         if (joinManager.hasFullJoin()) {
