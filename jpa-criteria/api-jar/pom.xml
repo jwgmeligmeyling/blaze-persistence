@@ -32,6 +32,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>blaze-persistence-core-api-jar</artifactId>
+            <version>1.4.0-Alpha2</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>

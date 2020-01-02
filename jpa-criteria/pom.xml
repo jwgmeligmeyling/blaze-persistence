@@ -21,12 +21,13 @@
     <parent>
         <groupId>com.blazebit</groupId>
         <artifactId>blaze-persistence-parent</artifactId>
-        <version>1.4.0-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
+        <version>1.4.0-Alpha3</version>
+<!--        <relativePath>../parent/pom.xml</relativePath>-->
     </parent>
 
     <artifactId>blaze-persistence-jpa-criteria</artifactId>
     <packaging>pom</packaging>
+    <version>1.4.0-SNAPSHOT</version>
     
     <name>Blazebit Persistence JPA-Criteria Module</name>
 
@@ -40,4 +41,29 @@
         <module>impl-jar</module>
         <module>jpa-2-compatibility-jar</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>blaze-persistence-core-api</artifactId>
+                <version>1.4.0-Alpha3</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>blaze-persistence-core-impl</artifactId>
+                <version>1.4.0-Alpha3</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>blaze-persistence-core-testsuite</artifactId>
+                <version>1.4.0-Alpha3</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>blaze-persistence-core-parser</artifactId>
+                <version>1.4.0-Alpha3</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
