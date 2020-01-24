@@ -1014,7 +1014,7 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                         }
                         String exampleAttributeName = "value";
                         if (node.getType() instanceof ManagedType<?> && JpaMetamodelUtils.isIdentifiable((ManagedType<?>) node.getType())) {
-                            exampleAttributeName = JpaMetamodelUtils.getSingleIdAttribute(node.getEntityType()).getName();
+                            exampleAttributeName = JpaMetamodelUtils.getIdAttributes(node.getEntityType()).iterator().next().getName();
                         }
                         syntheticSubqueryValuesWhereClauseConjuncts.add(node.getAlias() + "." + exampleAttributeName + " IS NULL");
                     }
@@ -1025,7 +1025,7 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                         if (syntheticSubqueryValuesWhereClauseConjuncts.isEmpty()) {
                             syntheticSubqueryValuesWhereClauseConjuncts.add("1=1");
                         }
-                        String exampleAttributeName = JpaMetamodelUtils.getSingleIdAttribute(node.getEntityType()).getName();
+                        String exampleAttributeName = JpaMetamodelUtils.getIdAttributes(node.getEntityType()).iterator().next().getName();
                         syntheticSubqueryValuesWhereClauseConjuncts.add(node.getAlias() + "." + exampleAttributeName + " IS NULL");
                     }
                 }
