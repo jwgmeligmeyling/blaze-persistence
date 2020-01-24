@@ -1154,7 +1154,7 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                 sb.append(')').append(')').append(" IS NULL");
                 if (queryBuilder.isEmbedded()) {
                     sb.append(" AND 1=1");
-                    String exampleAttributeName = JpaMetamodelUtils.getSingleIdAttribute(rootNode.getEntityType()).getName();
+                    String exampleAttributeName = JpaMetamodelUtils.getIdAttributes(rootNode.getEntityType()).iterator().next().getName();
                     sb.append(" AND ").append(rootNode.getAlias()).append(".").append(exampleAttributeName).append(" IS NULL");
                 }
             }
