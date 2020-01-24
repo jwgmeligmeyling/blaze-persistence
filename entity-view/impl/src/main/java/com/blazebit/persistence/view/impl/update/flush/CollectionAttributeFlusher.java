@@ -697,7 +697,6 @@ public class CollectionAttributeFlusher<E, V extends Collection<?>> extends Abst
                     }
                 }
             } else {
-                V initialValue = (V) viewAttributeAccessor.getInitialValue(view);
                 actions = replaceActions(value);
                 value = replaceWithRecordingCollection(context, view, value, actions);
 
@@ -715,11 +714,6 @@ public class CollectionAttributeFlusher<E, V extends Collection<?>> extends Abst
                             removed = addedAndRemoved[1];
                         } else {
                             added = removed = Collections.emptyMap();
-                        }
-
-                        if (elementDescriptor.isSubview()) {
-                            // Removed objects are entities and in this case we need entity view types, so we need to convert/references
-                            removed = getViewsFromEntities(context, Collections.emptyList(), removed, elementEqualityChecker);
                         }
 
                         // It could be the case that entity flushing is triggered by a different dirty collection,
@@ -1491,7 +1485,8 @@ public class CollectionAttributeFlusher<E, V extends Collection<?>> extends Abst
                     }
                 }
             }
-            removeAllAction.add(initialObject);
+            // Removed objects are entities and in this case we need entity view types, so we need to convert/references
+            removeAllAction.add(getViewElement(context, elementDescriptor, initialObject));
         }
 
         if (!removeAllAction.isEmpty()) {

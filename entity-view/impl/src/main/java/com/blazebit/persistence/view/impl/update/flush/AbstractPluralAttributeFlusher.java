@@ -362,6 +362,15 @@ public abstract class AbstractPluralAttributeFlusher<X extends AbstractPluralAtt
 
     protected abstract void addFlatViewElementFlushActions(UpdateContext context, TypeDescriptor elementDescriptor, List<A> actions, V current);
 
+    protected static Object getViewElement(UpdateContext context, TypeDescriptor typeDescriptor, Object jpaCollectionObject) {
+        if (typeDescriptor.isSubview()) {
+            CompositeAttributeFlusher compositeFlusher = (CompositeAttributeFlusher) typeDescriptor.getViewToEntityMapper().getFullGraphNode();
+            Object entityId = context.getEntityViewManager().getEntityIdAccessor().getValue(jpaCollectionObject);
+            return context.getEntityViewManager().getReference(compositeFlusher.getViewTypeClass(), compositeFlusher.createViewIdByEntityId(entityId));
+        }
+        return jpaCollectionObject;
+    }
+
     protected static boolean identityContains(Collection<Object> addedElements, MutableStateTrackable element) {
         for (Object addedElement : addedElements) {
             if (addedElement == element) {

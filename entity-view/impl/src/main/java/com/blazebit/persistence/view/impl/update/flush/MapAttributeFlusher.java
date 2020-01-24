@@ -1651,6 +1651,7 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
             OUTER: for (Map.Entry<?, ?> entry : initial.entrySet()) {
                 Object initialObject = entry.getKey();
                 Object initialViewId = entityIdAccessor.getValue(initialObject);
+                Object initialElement = getViewElement(context, elementDescriptor, entry.getValue());
                 for (int i = 0; i < objectsToAdd.length; i++) {
                     Map.Entry<Object, Object> entryToAdd = objectsToAdd[i];
                     Object currentObject = entryToAdd.getKey();
@@ -1660,21 +1661,22 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
                             objectsToAdd[i] = REMOVED_MARKER;
                             if (!equalityChecker.isEqual(context, entry.getValue(), entryToAdd.getValue())) {
                                 if (keyDescriptor.shouldFlushMutations()) {
-                                    actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapRemoveAction<>(initialObject, (Map<Object, Object>) initial));
+                                    actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapRemoveAction<>(initialObject, initialElement));
                                 }
-                                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapPutAction<>(entryToAdd.getKey(), entryToAdd.getValue(), (Map<Object, Object>) initial));
+                                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapPutAction<>(entryToAdd.getKey(), entryToAdd.getValue(), initialElement));
                             }
                             continue OUTER;
                         }
                     }
                 }
-                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapRemoveAction<>(initialObject, (Map<Object, Object>) initial));
+                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapRemoveAction<>(initialObject, initialElement));
             }
         } else {
             final BasicUserType<Object> basicUserType = keyDescriptor.getBasicUserType();
 
             OUTER: for (Map.Entry<?, ?> entry : initial.entrySet()) {
                 Object initialObject = entry.getKey();
+                Object initialElement = getViewElement(context, elementDescriptor, entry.getValue());
                 for (int i = 0; i < objectsToAdd.length; i++) {
                     Map.Entry<Object, Object> entryToAdd = objectsToAdd[i];
                     Object currentObject = entryToAdd.getKey();
@@ -1683,15 +1685,15 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
                             objectsToAdd[i] = REMOVED_MARKER;
                             if (!equalityChecker.isEqual(context, entry.getValue(), entryToAdd.getValue())) {
                                 if (keyDescriptor.shouldFlushMutations()) {
-                                    actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapRemoveAction<>(initialObject, (Map<Object, Object>) initial));
+                                    actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapRemoveAction<>(initialObject, initialElement));
                                 }
-                                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapPutAction<>(entryToAdd.getKey(), entryToAdd.getValue(), (Map<Object, Object>) initial));
+                                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapPutAction<>(entryToAdd.getKey(), entryToAdd.getValue(), initialElement));
                             }
                             continue OUTER;
                         }
                     }
                 }
-                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapRemoveAction<>(initialObject, (Map<Object, Object>) initial));
+                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapRemoveAction<>(initialObject, initialElement));
             }
         }
 
@@ -1699,7 +1701,8 @@ public class MapAttributeFlusher<E, V extends Map<?, ?>> extends AbstractPluralA
         for (int i = 0; i < objectsToAdd.length; i++) {
             Map.Entry<Object, Object> currentObject = objectsToAdd[i];
             if (currentObject != REMOVED_MARKER) {
-                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapPutAction<>(currentObject.getKey(), currentObject.getValue(), (Map<Object, Object>) initial));
+                Object initialElement = getViewElement(context, elementDescriptor, initial.get(currentObject.getKey()));
+                actions.add((MapAction<Map<Object, Object>>) (MapAction<?>) new MapPutAction<>(currentObject.getKey(), currentObject.getValue(), initialElement));
             }
         }
 
