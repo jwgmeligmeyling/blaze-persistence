@@ -1011,11 +1011,14 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                         if (syntheticSubqueryValuesWhereClauseConjuncts.isEmpty()) {
                             syntheticSubqueryValuesWhereClauseConjuncts.add("1=1");
                         }
-                        String exampleAttributeName = "value";
+
                         if (node.getType() instanceof ManagedType<?> && JpaMetamodelUtils.isIdentifiable((ManagedType<?>) node.getType())) {
-                            exampleAttributeName = JpaMetamodelUtils.getSingleIdAttribute(node.getEntityType()).getName();
+                            for (SingularAttribute<?, ?> idAttribute : JpaMetamodelUtils.getIdAttributes(node.getEntityType())) {
+                                syntheticSubqueryValuesWhereClauseConjuncts.add(node.getAlias() + "." + idAttribute.getName() + " IS NULL");
+                            }
+                        } else {
+                            syntheticSubqueryValuesWhereClauseConjuncts.add(node.getAlias() + ".value IS NULL");
                         }
-                        syntheticSubqueryValuesWhereClauseConjuncts.add(node.getAlias() + "." + exampleAttributeName + " IS NULL");
                     }
                 } else if (!externalRepresentation && node.isInlineCte()) {
                     placeholderRequiringNodes.add(node);
@@ -1024,8 +1027,10 @@ public class JoinManager extends AbstractManager<ExpressionModifier> {
                         if (syntheticSubqueryValuesWhereClauseConjuncts.isEmpty()) {
                             syntheticSubqueryValuesWhereClauseConjuncts.add("1=1");
                         }
-                        String exampleAttributeName = JpaMetamodelUtils.getSingleIdAttribute(node.getEntityType()).getName();
-                        syntheticSubqueryValuesWhereClauseConjuncts.add(node.getAlias() + "." + exampleAttributeName + " IS NULL");
+
+                        for (SingularAttribute<?, ?> idAttribute : JpaMetamodelUtils.getIdAttributes(node.getEntityType())) {
+                            syntheticSubqueryValuesWhereClauseConjuncts.add(node.getAlias() + "." + idAttribute.getName() + " IS NULL");
+                        }
                     }
                 }
                 if (!node.getNodes().isEmpty()) {
