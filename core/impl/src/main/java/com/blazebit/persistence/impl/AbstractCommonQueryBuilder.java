@@ -2560,9 +2560,9 @@ public abstract class AbstractCommonQueryBuilder<QueryResultType, BuilderType, S
                 }
             } else {
                 if (aliasesSb == null) {
-                    subquery = "(" + getQuerySpecification(cteInfo.nonRecursiveCriteriaBuilder.getQuery(embeddedToMainQuery)).getSql() + ")";
+                    subquery = "(" + getQuerySpecification(cteInfo.nonRecursiveCriteriaBuilder.getQuery(embeddedToMainQuery && baseQuery == null)).getSql() + ")";
                 } else {
-                    aliasesSb.insert(0, "(").append('(').append(getQuerySpecification(cteInfo.nonRecursiveCriteriaBuilder.getQuery(embeddedToMainQuery)).getSql()).append(')').append(')');
+                    aliasesSb.insert(0, "(").append('(').append(getQuerySpecification(cteInfo.nonRecursiveCriteriaBuilder.getQuery(embeddedToMainQuery && baseQuery == null)).getSql()).append(')').append(')');
                     subquery = aliasesSb.toString();
                 }
             }
