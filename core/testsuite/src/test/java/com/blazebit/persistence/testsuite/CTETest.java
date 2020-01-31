@@ -86,6 +86,21 @@ public class CTETest extends AbstractCoreTest {
     }
 
     @Test
+    public void testBindingNull() {
+        CriteriaBuilder<TestAdvancedCTE1> cb = cbf.create(em, TestAdvancedCTE1.class, "t").where("t.level").ltExpression("2");
+        cb.with(TestAdvancedCTE1.class, false)
+                .from(RecursiveEntity.class, "e")
+                .bind("id").select("e.id")
+                .bind("embeddable").select("NULL")
+                .bind("level").select("0")
+                .bind("parent").select("e.parent")
+                .where("e.parent").isNull()
+                .end();
+
+        List<TestAdvancedCTE1> resultList = cb.getResultList();
+    }
+
+    @Test
     @Category({ NoDatanucleus.class, NoEclipselink.class, NoOpenJPA.class, NoMySQLOld.class })
     public void testNotFullyBoundCTE() {
         CriteriaBuilder<TestCTE> cb = cbf.create(em, TestCTE.class, "t");
