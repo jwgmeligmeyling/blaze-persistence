@@ -311,7 +311,7 @@ public class EntityMetamodelImpl implements EntityMetamodel {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private TemporaryExtendedManagedType collectColumnNames(EntityType<?> e, Map<String, AttributeEntry<?, ?>> attributeMap, String parent, List<Attribute<?, ?>> parents, String elementCollectionPath, ManagedType<?> type,
+    private TemporaryExtendedManagedType collectColumnNames(final EntityType<?> e, Map<String, AttributeEntry<?, ?>> attributeMap, String parent, List<Attribute<?, ?>> parents, String elementCollectionPath, ManagedType<?> type,
                                                             Map<String, TemporaryExtendedManagedType> temporaryExtendedManagedTypes, Set<Class<?>> seenTypesForEnumResolving, Map<String, Class<Enum<?>>> enumTypes, Map<String, Class<Enum<?>>> enumTypesForLiterals, Map<AttributeAccessorCacheKey, AttributeAccessor<?, ?>> accessorCache) {
         Set<Attribute<?, ?>> attributes = (Set<Attribute<?, ?>>) (Set) type.getAttributes();
         TemporaryExtendedManagedType extendedManagedType = getTemporaryType(type, temporaryExtendedManagedTypes);
@@ -329,7 +329,7 @@ public class EntityMetamodelImpl implements EntityMetamodel {
 
         final Map<String, AttributeEntry<?, ?>> managedTypeAttributes = extendedManagedType.attributes;
 
-        for (Attribute<?, ?> attribute : attributes) {
+        for (final Attribute<?, ?> attribute : attributes) {
             List<Attribute<?, ?>> newParents;
             String attributeName;
             Class<?> fieldType = JpaMetamodelUtils.resolveFieldClass(type.getJavaType(), attribute);
@@ -346,6 +346,7 @@ public class EntityMetamodelImpl implements EntityMetamodel {
                     newParents.addAll(parents);
                     newParents.add(attribute);
                 }
+
                 if (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
                     EmbeddableType<?> embeddableType;
                     // Hibernate Envers reports java.util.Map as type for the embedded id of an audited entity which we have to handle specially
@@ -418,6 +419,22 @@ public class EntityMetamodelImpl implements EntityMetamodel {
                 attributeEntry = new AttributeEntry(jpaProvider, e, type, attribute, attributeName, fieldType, newParents, elementCollectionPath, accessorCache);
                 attributeMap.put(attributeName, attributeEntry);
                 managedTypeAttributes.put(attribute.getName(), attributeEntry);
+            }
+
+
+            if (jpaProvider.isCompositeBasicType(attribute.getDeclaringType(), attributeName)) {
+                Map<String, Class<?>> compositeBasicTypeAttributes = jpaProvider.getCompositeBasicTypeAttributes(attribute.getDeclaringType(), attributeName);
+                for (Map.Entry<String, Class<?>> compositeAttributeEntry : compositeBasicTypeAttributes.entrySet()) {
+                    final String compositeBasicTypeAttribute = compositeAttributeEntry.getKey();
+                    final Class<?> compositeAttributeType = compositeAttributeEntry.getValue();
+
+                    String idPath = attributeName + "." + compositeBasicTypeAttribute;
+                    Attribute compositeAttribute = new CompositeAttribute(compositeBasicTypeAttribute, e, compositeAttributeType);
+                    ArrayList<Object> compositeAttributePath = new ArrayList<>(attributeEntry.attributePath);
+                    compositeAttributePath.add(compositeAttribute);
+                    AttributeEntry embeddedAttributeEntry = new AttributeEntry(jpaProvider, e, attributeEntry.declaringType, compositeAttribute, idPath, compositeAttributeType, compositeAttributePath, attributeEntry.getElementCollectionPath() == null ? elementCollectionPath : attributeEntry.getElementCollectionPath(), accessorCache);
+                    managedTypeAttributes.put(attribute.getName() + "." + compositeBasicTypeAttribute, embeddedAttributeEntry);
+                }
             }
 
             if (attributeEntry != null && attributeEntry.joinTable != null && attributeEntry.joinTable.getTargetAttributeNames() != null) {
@@ -1329,4 +1346,5 @@ public class EntityMetamodelImpl implements EntityMetamodel {
             return result;
         }
     }
+
 }

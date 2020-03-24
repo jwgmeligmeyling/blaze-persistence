@@ -587,4 +587,14 @@ public class DataNucleus51JpaProvider implements JpaProvider {
         return DataNucleus51JpaMetamodelAccessor.INSTANCE;
     }
 
+    @Override
+    public boolean isCompositeBasicType(ManagedType<?> ownerType, String attributeName) {
+        return false;
+    }
+
+    @Override
+    public Map<String, Class<?>> getCompositeBasicTypeAttributes(ManagedType<?> ownerType, String attributeName) {
+        return null;
+    }
+
 }

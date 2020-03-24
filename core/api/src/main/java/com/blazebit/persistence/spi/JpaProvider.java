@@ -653,6 +653,22 @@ public interface JpaProvider {
     public JpaMetamodelAccessor getJpaMetamodelAccessor();
 
     /**
+     * Returns true if the attribute is mapped with a {@code CompositeUserType}.
+     * @param ownerType The owner of the attribute
+     * @param attributeName The attribute name to check
+     * @return True if join columns are mapped with a {@code CompositeUserType}, false otherwise
+     */
+    public boolean isCompositeBasicType(ManagedType<?> ownerType, String attributeName);
+
+    /**
+     * Get the composite attributes of a {@code CompositeUserType}.
+     * @param ownerType The owner of the attribute
+     * @param attributeName The attribute name to check
+     * @return the composite attributes of a {@code CompositeUserType}.
+     */
+    public Map<String, Class<?>> getCompositeBasicTypeAttributes(ManagedType<?> ownerType, String attributeName);
+
+    /**
      * The possible locations of a constraint.
      *
      * @author Christian Beikov

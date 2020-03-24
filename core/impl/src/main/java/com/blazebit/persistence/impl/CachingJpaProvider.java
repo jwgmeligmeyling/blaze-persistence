@@ -416,4 +416,14 @@ public final class CachingJpaProvider implements JpaProvider {
     public JpaMetamodelAccessor getJpaMetamodelAccessor() {
         return jpaProvider.getJpaMetamodelAccessor();
     }
+
+    @Override
+    public boolean isCompositeBasicType(ManagedType<?> ownerType, String attributeName) {
+        return jpaProvider.isCompositeBasicType(ownerType, attributeName);
+    }
+
+    @Override
+    public Map<String, Class<?>> getCompositeBasicTypeAttributes(ManagedType<?> ownerType, String attributeName) {
+        return jpaProvider.getCompositeBasicTypeAttributes(ownerType, attributeName);
+    }
 }

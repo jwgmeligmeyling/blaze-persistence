@@ -48,6 +48,8 @@ import org.hibernate.type.AssociationType;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.ComponentType;
 import org.hibernate.type.CustomType;
+import org.hibernate.type.CompositeCustomType;
+import org.hibernate.type.CompositeType;
 import org.hibernate.type.EmbeddedComponentType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.ManyToOneType;
@@ -1686,6 +1688,31 @@ public class HibernateJpaProvider implements JpaProvider {
     @Override
     public JpaMetamodelAccessor getJpaMetamodelAccessor() {
         return JpaMetamodelAccessorImpl.INSTANCE;
+    }
+
+    @Override
+    public boolean isCompositeBasicType(ManagedType<?> ownerType, String attributeName) {
+        AbstractEntityPersister entityPersister = getEntityPersister(ownerType);
+        try {
+            Type propertyType = entityPersister.getPropertyType(attributeName);
+            return propertyType instanceof CompositeCustomType; // or instanceof CompositeType && instanceof BasicType
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public Map<String, Class<?>> getCompositeBasicTypeAttributes(ManagedType<?> ownerType, String attributeName) {
+        AbstractEntityPersister entityPersister = getEntityPersister(ownerType);
+        Type propertyType = entityPersister.getPropertyType(attributeName);
+        CompositeType compositeType = (CompositeType) propertyType;
+        String[] propertyNames = compositeType.getPropertyNames();
+        Type[] subtypes = compositeType.getSubtypes();
+        Map<String, Class<?>> attributes = new LinkedHashMap<>();
+        for (int i = 0; i < propertyNames.length; i++) {
+            attributes.put(propertyNames[i], subtypes[i].getReturnedClass());
+        }
+        return attributes;
     }
 
 }
