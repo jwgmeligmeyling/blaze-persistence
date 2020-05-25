@@ -22,6 +22,7 @@ import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.TypeDef;
 import org.jadira.usertype.moneyandcurrency.moneta.PersistentMoneyAmountAndCurrency;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.money.CurrencyUnit;
@@ -76,6 +77,7 @@ public class JadiraMoneyTypeTest extends AbstractCoreTest {
     }
 
     @Test
+    @Ignore
     public void testCteBindCompoundProperties() {
         List<MoneyCte> me = cbf.create(em, MoneyCte.class)
                 .with(MoneyCte.class)

@@ -28,15 +28,15 @@ import java.lang.reflect.Member;
  * @author Jan-Willem Gmelig Meyling
  * @since 1.5.0
  */
-class CompositeAttribute<X, Y> implements Attribute<X, Y> {
+class FakeAttribute<X, Y> implements Attribute<X, Y> {
     private final String attributeName;
-    private final ManagedType<X> declaringType;
-    private final Class<Y> type;
+    private final EntityType<X> declaringType;
+    private final Class<Y> compositeAttributeType;
 
-    public CompositeAttribute(String attributeName, ManagedType<X> declaringType, Class<Y> type) {
+    public FakeAttribute(String attributeName, EntityType<X> declaringType, Class<Y> compositeAttributeType) {
         this.attributeName = attributeName;
         this.declaringType = declaringType;
-        this.type = type;
+        this.compositeAttributeType = compositeAttributeType;
     }
 
     @Override
@@ -46,7 +46,7 @@ class CompositeAttribute<X, Y> implements Attribute<X, Y> {
 
     @Override
     public PersistentAttributeType getPersistentAttributeType() {
-        return PersistentAttributeType.EMBEDDED;
+        return PersistentAttributeType.BASIC;
     }
 
     @Override
@@ -56,7 +56,7 @@ class CompositeAttribute<X, Y> implements Attribute<X, Y> {
 
     @Override
     public Class<Y> getJavaType() {
-        return type;
+        return compositeAttributeType;
     }
 
     @Override

@@ -415,26 +415,28 @@ public class EntityMetamodelImpl implements EntityMetamodel {
                     attributeEntry = new AttributeEntry(jpaProvider, type, type, attribute, attributeName, fieldType, newParents, elementCollectionPath, accessorCache);
                     managedTypeAttributes.put(attribute.getName(), attributeEntry);
                 }
-            } else {
-                attributeEntry = new AttributeEntry(jpaProvider, e, type, attribute, attributeName, fieldType, newParents, elementCollectionPath, accessorCache);
+            } else if (jpaProvider.isCompositeBasicType(attribute.getDeclaringType(), attributeName)) {
+                CompositeAttribute<?, ?> compositeAttribute = new CompositeAttribute<>(attribute.getName(), attribute.getDeclaringType(), attribute.getJavaType());
+                attributeEntry = new AttributeEntry(jpaProvider, e, type, compositeAttribute, attributeName, fieldType, newParents, elementCollectionPath, accessorCache);
                 attributeMap.put(attributeName, attributeEntry);
                 managedTypeAttributes.put(attribute.getName(), attributeEntry);
-            }
 
-
-            if (jpaProvider.isCompositeBasicType(attribute.getDeclaringType(), attributeName)) {
                 Map<String, Class<?>> compositeBasicTypeAttributes = jpaProvider.getCompositeBasicTypeAttributes(attribute.getDeclaringType(), attributeName);
                 for (Map.Entry<String, Class<?>> compositeAttributeEntry : compositeBasicTypeAttributes.entrySet()) {
                     final String compositeBasicTypeAttribute = compositeAttributeEntry.getKey();
                     final Class<?> compositeAttributeType = compositeAttributeEntry.getValue();
 
                     String idPath = attributeName + "." + compositeBasicTypeAttribute;
-                    Attribute compositeAttribute = new CompositeAttribute(compositeBasicTypeAttribute, e, compositeAttributeType);
+                    Attribute nestedAttribute = new FakeAttribute(compositeBasicTypeAttribute, e, compositeAttributeType);
                     ArrayList<Object> compositeAttributePath = new ArrayList<>(attributeEntry.attributePath);
-                    compositeAttributePath.add(compositeAttribute);
-                    AttributeEntry embeddedAttributeEntry = new AttributeEntry(jpaProvider, e, attributeEntry.declaringType, compositeAttribute, idPath, compositeAttributeType, compositeAttributePath, attributeEntry.getElementCollectionPath() == null ? elementCollectionPath : attributeEntry.getElementCollectionPath(), accessorCache);
+                    compositeAttributePath.add(nestedAttribute);
+                    AttributeEntry embeddedAttributeEntry = new AttributeEntry(jpaProvider, e, attributeEntry.declaringType, nestedAttribute, idPath, compositeAttributeType, compositeAttributePath, attributeEntry.getElementCollectionPath() == null ? elementCollectionPath : attributeEntry.getElementCollectionPath(), accessorCache);
                     managedTypeAttributes.put(attribute.getName() + "." + compositeBasicTypeAttribute, embeddedAttributeEntry);
                 }
+            } else {
+                attributeEntry = new AttributeEntry(jpaProvider, e, type, attribute, attributeName, fieldType, newParents, elementCollectionPath, accessorCache);
+                attributeMap.put(attributeName, attributeEntry);
+                managedTypeAttributes.put(attribute.getName(), attributeEntry);
             }
 
             if (attributeEntry != null && attributeEntry.joinTable != null && attributeEntry.joinTable.getTargetAttributeNames() != null) {
