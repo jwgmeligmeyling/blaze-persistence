@@ -16,7 +16,7 @@
 
 package com.blazebit.persistence.testsuite.base;
 
-import com.blazebit.persistence.spi.JoinTable;
+import com.blazebit.persistence.parser.JoinTable;
 import com.blazebit.persistence.testsuite.base.jpa.AbstractJpaPersistenceTest;
 import com.blazebit.persistence.testsuite.base.jpa.MutablePersistenceUnitInfo;
 import com.blazebit.persistence.testsuite.base.jpa.RelationalModelAccessor;

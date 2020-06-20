@@ -28,7 +28,7 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 
 import com.blazebit.persistence.CTE;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.SubqueryInitiator;
 import com.blazebit.persistence.examples.itsm.model.customer.entity.AbstractCustomer;
 import com.blazebit.persistence.examples.itsm.model.customer.entity.ServiceContract;

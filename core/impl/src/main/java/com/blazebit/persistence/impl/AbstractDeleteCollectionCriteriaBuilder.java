@@ -17,7 +17,7 @@
 package com.blazebit.persistence.impl;
 
 import com.blazebit.persistence.BaseDeleteCriteriaBuilder;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.ReturningBuilder;
 import com.blazebit.persistence.ReturningObjectBuilder;
 import com.blazebit.persistence.ReturningResult;
@@ -33,10 +33,10 @@ import com.blazebit.persistence.impl.util.SqlUtils;
 import com.blazebit.persistence.parser.expression.ExpressionCopyContext;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.DbmsModificationState;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 import com.blazebit.persistence.spi.ExtendedQuerySupport;
-import com.blazebit.persistence.spi.JoinTable;
+import com.blazebit.persistence.parser.JoinTable;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;

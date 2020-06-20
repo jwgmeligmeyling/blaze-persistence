@@ -16,6 +16,8 @@
 
 package com.blazebit.persistence;
 
+import com.blazebit.persistence.parser.JoinType;
+
 import javax.persistence.metamodel.EntityType;
 import java.util.Collection;
 import java.util.Set;

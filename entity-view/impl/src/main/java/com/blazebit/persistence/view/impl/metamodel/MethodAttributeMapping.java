@@ -16,7 +16,7 @@
 
 package com.blazebit.persistence.view.impl.metamodel;
 
-import com.blazebit.persistence.spi.AttributePath;
+import com.blazebit.persistence.parser.AttributePath;
 import com.blazebit.persistence.view.AttributeFilterProvider;
 import com.blazebit.persistence.view.CascadeType;
 import com.blazebit.persistence.view.InverseRemoveStrategy;

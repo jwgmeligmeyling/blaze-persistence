@@ -28,8 +28,8 @@ import com.blazebit.persistence.parser.expression.Expression;
 import com.blazebit.persistence.parser.expression.ExpressionCopyContext;
 import com.blazebit.persistence.parser.expression.SubqueryExpression;
 import com.blazebit.persistence.spi.DbmsStatementType;
-import com.blazebit.persistence.spi.ExtendedManagedType;
-import com.blazebit.persistence.spi.JpaMetamodelAccessor;
+import com.blazebit.persistence.parser.ExtendedManagedType;
+import com.blazebit.persistence.parser.JpaMetamodelAccessor;
 
 import java.util.ArrayList;
 import java.util.Collections;

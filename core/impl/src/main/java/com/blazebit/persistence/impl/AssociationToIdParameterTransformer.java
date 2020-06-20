@@ -16,7 +16,7 @@
 
 package com.blazebit.persistence.impl;
 
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import javax.persistence.Query;
 

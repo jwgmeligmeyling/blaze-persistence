@@ -20,12 +20,12 @@ import java.util.*;
 
 import com.blazebit.lang.StringUtils;
 import com.blazebit.persistence.ConfigurationProperties;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.parser.EntityMetamodel;
 import com.blazebit.persistence.spi.CriteriaBuilderConfiguration;
 import com.blazebit.persistence.spi.DbmsDialect;
 import com.blazebit.persistence.spi.EntityManagerFactoryIntegrator;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.spi.JpqlFunctionGroup;
 import com.blazebit.persistence.testsuite.base.AbstractPersistenceTest;
 import com.blazebit.persistence.testsuite.entity.Document;

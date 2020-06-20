@@ -20,7 +20,7 @@ import com.blazebit.persistence.FullQueryBuilder;
 import com.blazebit.persistence.parser.expression.Expression;
 import com.blazebit.persistence.parser.expression.ExpressionFactory;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.view.CorrelationProviderFactory;
 import com.blazebit.persistence.view.impl.CorrelationProviderHelper;
 import com.blazebit.persistence.view.impl.EntityViewConfiguration;

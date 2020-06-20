@@ -51,8 +51,8 @@ import com.blazebit.persistence.parser.predicate.LikePredicate;
 import com.blazebit.persistence.parser.predicate.LtPredicate;
 import com.blazebit.persistence.parser.predicate.MemberOfPredicate;
 import com.blazebit.persistence.parser.predicate.Predicate;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EmbeddableType;

@@ -216,16 +216,30 @@ public class PathTargetResolvingExpressionVisitor implements Expression.Visitor 
     @Override
     public void visit(PropertyExpression expression) {
         String property = expression.getProperty();
-        if (currentPosition.getCurrentType() instanceof BasicType<?>) {
-            throw new IllegalArgumentException("Can't access property '" + property + "' on basic type '" + JpaMetamodelUtils.getTypeName(currentPosition.getCurrentType()) + "'. Did you forget to add the embeddable type to your persistence.xml?");
+
+        Type<?> currentType = currentPosition.getCurrentType();
+        boolean isBasictype = currentType instanceof BasicType<?>;
+        try {
+            Attribute<?, ?> currentAttribute = currentPosition.getAttribute();
+            ExtendedManagedType<?> declaringType = metamodel.getManagedType(ExtendedManagedType.class, currentAttribute.getDeclaringType());
+            // The extended metamodel may return a different attribute in case of composite basic types
+            ExtendedAttribute<?, ?> extendedAttribute = declaringType.getAttribute(currentAttribute.getName());
+            currentAttribute = extendedAttribute.getAttribute();
+            isBasictype = currentAttribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.BASIC;
+        } catch (NullPointerException e) {
+            // Ignore for now...
         }
-        Attribute<?, ?> attribute = JpaMetamodelUtils.getAttribute((ManagedType<?>) currentPosition.getCurrentType(), property);
+
+        if (isBasictype) {
+            throw new IllegalArgumentException("Can't access property '" + property + "' on basic type '" + JpaMetamodelUtils.getTypeName(currentType) + "'. Did you forget to add the embeddable type to your persistence.xml?");
+        }
+        Attribute<?, ?> attribute = JpaMetamodelUtils.getAttribute((ManagedType<?>) currentType, property);
         // Older Hibernate versions did not throw an exception but returned null instead
         if (attribute == null) {
-            throw new IllegalArgumentException("Attribute '" + property + "' not found on type '" + JpaMetamodelUtils.getTypeName(currentPosition.getCurrentType()) + "'");
+            throw new IllegalArgumentException("Attribute '" + property + "' not found on type '" + JpaMetamodelUtils.getTypeName(currentType) + "'");
         }
         currentPosition.setAttribute(attribute);
-        Type<?> type = getType(currentPosition.getCurrentType(), attribute);
+        Type<?> type = getType(currentType, attribute);
         Type<?> valueType = null;
         Type<?> keyType = null;
 

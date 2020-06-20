@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.spi;
-
-import com.blazebit.persistence.JoinType;
+package com.blazebit.persistence.parser;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;

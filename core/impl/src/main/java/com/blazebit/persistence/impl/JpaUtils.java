@@ -34,11 +34,11 @@ import com.blazebit.persistence.parser.expression.Subquery;
 import com.blazebit.persistence.parser.expression.SubqueryExpression;
 import com.blazebit.persistence.parser.expression.TreatExpression;
 import com.blazebit.persistence.spi.DbmsStatementType;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
-import com.blazebit.persistence.spi.JoinTable;
-import com.blazebit.persistence.spi.JpaMetamodelAccessor;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
+import com.blazebit.persistence.parser.JoinTable;
+import com.blazebit.persistence.parser.JpaMetamodelAccessor;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;

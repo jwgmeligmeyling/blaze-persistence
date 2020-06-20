@@ -17,7 +17,7 @@
 package com.blazebit.persistence.view.impl.update.flush;
 
 import com.blazebit.persistence.DeleteCriteriaBuilder;
-import com.blazebit.persistence.spi.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedAttribute;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
 import com.blazebit.persistence.view.impl.update.UpdateContext;
 

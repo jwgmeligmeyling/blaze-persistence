@@ -41,7 +41,7 @@ import com.blazebit.persistence.parser.predicate.MemberOfPredicate;
 import com.blazebit.persistence.parser.predicate.Predicate;
 import com.blazebit.persistence.parser.predicate.PredicateBuilder;
 import com.blazebit.persistence.parser.util.ExpressionUtils;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;

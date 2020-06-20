@@ -17,8 +17,8 @@
 package com.blazebit.persistence.view.impl.metamodel;
 
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 import com.blazebit.persistence.view.CTEProvider;
 import com.blazebit.persistence.view.EntityViewManager;
 import com.blazebit.persistence.view.FlushMode;

@@ -22,7 +22,7 @@ import com.blazebit.persistence.parser.expression.Expression.Visitor;
 import com.blazebit.persistence.parser.expression.ExpressionCopyContext;
 import com.blazebit.persistence.parser.expression.modifier.ExpressionModifier;
 import com.blazebit.persistence.impl.transform.ExpressionModifierVisitor;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import java.util.ArrayList;
 import java.util.EnumSet;

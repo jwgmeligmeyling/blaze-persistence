@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.spi;
+package com.blazebit.persistence.parser;
 
 /**
  * A class to access the attribute of an entity.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.spi;
+package com.blazebit.persistence.parser;
 
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;

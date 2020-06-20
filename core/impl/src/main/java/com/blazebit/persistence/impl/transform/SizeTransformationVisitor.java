@@ -46,7 +46,7 @@ import com.blazebit.persistence.parser.expression.SubqueryExpression;
 import com.blazebit.persistence.parser.expression.modifier.ExpressionModifier;
 import com.blazebit.persistence.parser.util.ExpressionUtils;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;

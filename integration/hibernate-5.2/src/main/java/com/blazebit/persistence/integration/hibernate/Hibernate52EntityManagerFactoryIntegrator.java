@@ -20,7 +20,7 @@ import com.blazebit.apt.service.ServiceProvider;
 import com.blazebit.persistence.integration.hibernate.base.HibernateJpa21Provider;
 import com.blazebit.persistence.integration.hibernate.base.function.AbstractHibernateEntityManagerFactoryIntegrator;
 import com.blazebit.persistence.spi.EntityManagerFactoryIntegrator;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.spi.JpaProviderFactory;
 import org.hibernate.Session;
 import org.hibernate.dialect.Dialect;

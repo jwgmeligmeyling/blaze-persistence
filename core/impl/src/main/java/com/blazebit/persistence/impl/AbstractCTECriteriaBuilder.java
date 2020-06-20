@@ -24,8 +24,8 @@ import com.blazebit.persistence.impl.query.EntityFunctionNode;
 import com.blazebit.persistence.impl.query.QuerySpecification;
 import com.blazebit.persistence.parser.expression.ExpressionCopyContext;
 import com.blazebit.persistence.spi.DbmsStatementType;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 import com.blazebit.persistence.spi.SetOperationType;
 
 import javax.persistence.Query;

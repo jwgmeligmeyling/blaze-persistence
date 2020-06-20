@@ -56,7 +56,7 @@ import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.parser.util.TypeConverter;
 import com.blazebit.persistence.parser.util.TypeUtils;
 import com.blazebit.persistence.spi.DbmsDialect;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.spi.JpqlFunction;
 
 import javax.persistence.metamodel.Attribute;

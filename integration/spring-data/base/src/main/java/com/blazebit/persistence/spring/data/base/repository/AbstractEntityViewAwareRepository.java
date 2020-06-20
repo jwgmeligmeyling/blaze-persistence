@@ -24,7 +24,7 @@ import com.blazebit.persistence.criteria.BlazeCriteriaBuilder;
 import com.blazebit.persistence.criteria.BlazeCriteriaQuery;
 import com.blazebit.persistence.criteria.BlazeCriteria;
 import com.blazebit.persistence.parser.EntityMetamodel;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 import com.blazebit.persistence.spring.data.base.EntityViewSortUtil;
 import com.blazebit.persistence.spring.data.base.query.KeysetAwarePageImpl;
 import com.blazebit.persistence.spring.data.repository.KeysetPageable;

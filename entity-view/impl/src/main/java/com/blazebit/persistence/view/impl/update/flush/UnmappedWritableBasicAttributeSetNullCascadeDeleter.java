@@ -18,7 +18,7 @@ package com.blazebit.persistence.view.impl.update.flush;
 
 import com.blazebit.persistence.UpdateCriteriaBuilder;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
 import com.blazebit.persistence.view.impl.accessor.Accessors;
 import com.blazebit.persistence.view.impl.accessor.AttributeAccessor;

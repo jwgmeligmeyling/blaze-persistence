@@ -18,7 +18,7 @@ package com.blazebit.persistence.impl;
 
 import com.blazebit.persistence.parser.expression.Expression;
 import com.blazebit.persistence.parser.expression.ParameterExpression;
-import com.blazebit.persistence.spi.AttributeAccessor;
+import com.blazebit.persistence.parser.AttributeAccessor;
 
 import javax.persistence.Parameter;
 import javax.persistence.Query;

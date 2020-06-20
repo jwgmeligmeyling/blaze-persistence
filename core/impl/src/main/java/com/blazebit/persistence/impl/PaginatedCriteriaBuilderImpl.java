@@ -52,7 +52,7 @@ import com.blazebit.persistence.impl.query.EntityFunctionNode;
 import com.blazebit.persistence.impl.query.ObjectBuilderTypedQuery;
 import com.blazebit.persistence.impl.query.QuerySpecification;
 import com.blazebit.persistence.parser.expression.PathExpression;
-import com.blazebit.persistence.spi.AttributeAccessor;
+import com.blazebit.persistence.parser.AttributeAccessor;
 
 import javax.persistence.Parameter;
 import javax.persistence.TypedQuery;

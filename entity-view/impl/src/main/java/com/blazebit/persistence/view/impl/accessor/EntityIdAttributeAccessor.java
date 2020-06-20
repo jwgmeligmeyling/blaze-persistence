@@ -16,7 +16,7 @@
 
 package com.blazebit.persistence.view.impl.accessor;
 
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 
 /**
  *

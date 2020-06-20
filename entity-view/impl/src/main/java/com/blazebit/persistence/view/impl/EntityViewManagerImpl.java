@@ -30,7 +30,7 @@ import com.blazebit.persistence.parser.expression.MacroConfiguration;
 import com.blazebit.persistence.parser.expression.MacroFunction;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.spi.DbmsDialect;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.spi.JpqlFunction;
 import com.blazebit.persistence.spi.JpqlMacro;
 import com.blazebit.persistence.spi.PackageOpener;

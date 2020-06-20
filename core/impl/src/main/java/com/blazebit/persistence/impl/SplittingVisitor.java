@@ -24,7 +24,7 @@ import com.blazebit.persistence.parser.expression.MapValueExpression;
 import com.blazebit.persistence.parser.expression.PathElementExpression;
 import com.blazebit.persistence.parser.expression.PathExpression;
 import com.blazebit.persistence.parser.expression.PropertyExpression;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import javax.persistence.metamodel.Type;
 import java.util.ArrayList;

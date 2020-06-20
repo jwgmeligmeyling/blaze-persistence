@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence;
+package com.blazebit.persistence.parser;
 
 /**
  * The different join types which are possible.

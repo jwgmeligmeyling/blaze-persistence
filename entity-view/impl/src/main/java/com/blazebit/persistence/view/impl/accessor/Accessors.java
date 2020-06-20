@@ -17,7 +17,7 @@
 package com.blazebit.persistence.view.impl.accessor;
 
 import com.blazebit.persistence.parser.EntityMetamodel;
-import com.blazebit.persistence.spi.AttributePath;
+import com.blazebit.persistence.parser.AttributePath;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
 import com.blazebit.persistence.view.impl.EntityViewManagerImpl;
 import com.blazebit.persistence.view.impl.metamodel.AbstractMethodAttribute;

@@ -26,7 +26,7 @@ import com.blazebit.persistence.parser.predicate.EqPredicate;
 import com.blazebit.persistence.parser.predicate.InPredicate;
 import com.blazebit.persistence.parser.predicate.Predicate;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 import com.blazebit.persistence.view.CorrelationProviderFactory;
 import com.blazebit.persistence.view.FetchStrategy;
 import com.blazebit.persistence.view.SubqueryProviderFactory;

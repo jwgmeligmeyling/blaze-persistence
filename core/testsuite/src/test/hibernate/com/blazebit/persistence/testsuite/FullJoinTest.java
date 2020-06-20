@@ -17,7 +17,7 @@
 package com.blazebit.persistence.testsuite;
 
 import com.blazebit.persistence.CriteriaBuilder;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.PaginatedCriteriaBuilder;
 import com.blazebit.persistence.testsuite.base.jpa.category.NoH2;
 import com.blazebit.persistence.testsuite.base.jpa.category.NoHibernate;

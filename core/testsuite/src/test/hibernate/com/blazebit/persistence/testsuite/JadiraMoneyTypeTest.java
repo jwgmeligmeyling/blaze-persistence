@@ -77,7 +77,6 @@ public class JadiraMoneyTypeTest extends AbstractCoreTest {
     }
 
     @Test
-    @Ignore
     public void testCteBindCompoundProperties() {
         List<MoneyCte> me = cbf.create(em, MoneyCte.class)
                 .with(MoneyCte.class)

@@ -17,7 +17,7 @@
 package com.blazebit.persistence.impl;
 
 import com.blazebit.persistence.From;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.impl.function.entity.ValuesEntity;
 import com.blazebit.persistence.impl.transform.ExpressionModifierVisitor;
 import com.blazebit.persistence.parser.expression.BaseNode;

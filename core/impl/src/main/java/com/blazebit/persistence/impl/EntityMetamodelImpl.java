@@ -18,14 +18,14 @@ package com.blazebit.persistence.impl;
 
 import com.blazebit.annotation.AnnotationUtils;
 import com.blazebit.persistence.CTE;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.parser.EntityMetamodel;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.AttributeAccessor;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
-import com.blazebit.persistence.spi.JoinTable;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.AttributeAccessor;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
+import com.blazebit.persistence.parser.JoinTable;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.spi.JpaProviderFactory;
 import com.blazebit.reflection.ReflectionUtils;
 
@@ -33,16 +33,20 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.BasicType;
+import javax.persistence.metamodel.CollectionAttribute;
 import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.IdentifiableType;
+import javax.persistence.metamodel.ListAttribute;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.MapAttribute;
 import javax.persistence.metamodel.Metamodel;
 import javax.persistence.metamodel.PluralAttribute;
+import javax.persistence.metamodel.SetAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.Type;
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -52,6 +56,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -433,6 +438,8 @@ public class EntityMetamodelImpl implements EntityMetamodel {
                     AttributeEntry embeddedAttributeEntry = new AttributeEntry(jpaProvider, e, attributeEntry.declaringType, nestedAttribute, idPath, compositeAttributeType, compositeAttributePath, attributeEntry.getElementCollectionPath() == null ? elementCollectionPath : attributeEntry.getElementCollectionPath(), accessorCache);
                     managedTypeAttributes.put(attribute.getName() + "." + compositeBasicTypeAttribute, embeddedAttributeEntry);
                 }
+
+                basicTypeMap.put(attribute.getJavaType(), new CompositeBasicType(attribute.getJavaType(), compositeBasicTypeAttributes));
             } else {
                 attributeEntry = new AttributeEntry(jpaProvider, e, type, attribute, attributeName, fieldType, newParents, elementCollectionPath, accessorCache);
                 attributeMap.put(attributeName, attributeEntry);
@@ -1310,6 +1317,248 @@ public class EntityMetamodelImpl implements EntityMetamodel {
         @Override
         public Class<T> getJavaType() {
             return cls;
+        }
+    }
+
+    /**
+     * @author Jan-Willem Gmelig Meyling
+     * @since 1.5.0
+     */
+    public static class CompositeBasicType<T> implements EmbeddableType<T> {
+
+        private final Class<T> javaType;
+        private final Map<String, SingularAttribute<T, ?>> attributeMap;
+
+        public CompositeBasicType(Class<T> javaType, Map<String, Class<?>> attributeMap) {
+            this.attributeMap = new LinkedHashMap<>();
+            this.javaType = javaType;
+            for (Map.Entry<String, Class<?>> stringClassEntry : attributeMap.entrySet()) {
+                final Class<?> clasz = stringClassEntry.getValue();
+                this.attributeMap.put(stringClassEntry.getKey(), new CompositeSingularAttribute(clasz));
+            }
+        }
+
+        @Override
+        public Set<Attribute<? super T, ?>> getAttributes() {
+            return new HashSet<Attribute<? super T, ?>>(attributeMap.values());
+        }
+
+        @Override
+        public Set<Attribute<T, ?>> getDeclaredAttributes() {
+            return new HashSet<Attribute<T, ?>>(attributeMap.values());
+        }
+
+        @Override
+        public <Y> SingularAttribute<? super T, Y> getSingularAttribute(String name, Class<Y> type) {
+            return (SingularAttribute<? super T, Y>) attributeMap.get(name);
+        }
+
+        @Override
+        public <Y> SingularAttribute<T, Y> getDeclaredSingularAttribute(String name, Class<Y> type) {
+            return (SingularAttribute<T, Y>) attributeMap.get(name);
+        }
+
+        @Override
+        public Set<SingularAttribute<? super T, ?>> getSingularAttributes() {
+            return new HashSet<SingularAttribute<? super T, ?>>(attributeMap.values());
+        }
+
+        @Override
+        public Set<SingularAttribute<T, ?>> getDeclaredSingularAttributes() {
+            return new HashSet<SingularAttribute<T, ?>>(attributeMap.values());
+        }
+
+        @Override
+        public <E> CollectionAttribute<? super T, E> getCollection(String name, Class<E> elementType) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public <E> CollectionAttribute<T, E> getDeclaredCollection(String name, Class<E> elementType) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public <E> SetAttribute<? super T, E> getSet(String name, Class<E> elementType) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public <E> SetAttribute<T, E> getDeclaredSet(String name, Class<E> elementType) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public <E> ListAttribute<? super T, E> getList(String name, Class<E> elementType) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public <E> ListAttribute<T, E> getDeclaredList(String name, Class<E> elementType) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public <K, V> MapAttribute<? super T, K, V> getMap(String name, Class<K> keyType, Class<V> valueType) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public <K, V> MapAttribute<T, K, V> getDeclaredMap(String name, Class<K> keyType, Class<V> valueType) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public Set<PluralAttribute<? super T, ?, ?>> getPluralAttributes() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Set<PluralAttribute<T, ?, ?>> getDeclaredPluralAttributes() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Attribute<? super T, ?> getAttribute(String name) {
+            return attributeMap.get(name);
+        }
+
+        @Override
+        public Attribute<T, ?> getDeclaredAttribute(String name) {
+            return attributeMap.get(name);
+        }
+
+        @Override
+        public SingularAttribute<? super T, ?> getSingularAttribute(String name) {
+            return attributeMap.get(name);
+        }
+
+        @Override
+        public SingularAttribute<T, ?> getDeclaredSingularAttribute(String name) {
+            return attributeMap.get(name);
+        }
+
+        @Override
+        public CollectionAttribute<? super T, ?> getCollection(String name) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public CollectionAttribute<T, ?> getDeclaredCollection(String name) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public SetAttribute<? super T, ?> getSet(String name) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public SetAttribute<T, ?> getDeclaredSet(String name) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public ListAttribute<? super T, ?> getList(String name) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public ListAttribute<T, ?> getDeclaredList(String name) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public MapAttribute<? super T, ?, ?> getMap(String name) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public MapAttribute<T, ?, ?> getDeclaredMap(String name) {
+            throw new UnsupportedOperationException("Basic composite types can only have singular attributes");
+        }
+
+        @Override
+        public PersistenceType getPersistenceType() {
+            return PersistenceType.EMBEDDABLE;
+        }
+
+        @Override
+        public Class<T> getJavaType() {
+            return javaType;
+        }
+
+        private class CompositeSingularAttribute implements SingularAttribute<T, Object> {
+            private final Class<?> clasz;
+
+            public CompositeSingularAttribute(Class<?> clasz) {
+                this.clasz = clasz;
+            }
+
+            @Override
+            public boolean isId() {
+                return false;
+            }
+
+            @Override
+            public boolean isVersion() {
+                return false;
+            }
+
+            @Override
+            public boolean isOptional() {
+                return false;
+            }
+
+            @Override
+            public Type<Object> getType() {
+                return new BasicTypeImpl(clasz);
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+
+            @Override
+            public PersistentAttributeType getPersistentAttributeType() {
+                return null;
+            }
+
+            @Override
+            public ManagedType<T> getDeclaringType() {
+                return CompositeBasicType.this;
+            }
+
+            @Override
+            public Class<Object> getJavaType() {
+                return (Class) clasz;
+            }
+
+            @Override
+            public Member getJavaMember() {
+                return null;
+            }
+
+            @Override
+            public boolean isAssociation() {
+                return false;
+            }
+
+            @Override
+            public boolean isCollection() {
+                return false;
+            }
+
+            @Override
+            public BindableType getBindableType() {
+                return BindableType.SINGULAR_ATTRIBUTE;
+            }
+
+            @Override
+            public Class<Object> getBindableJavaType() {
+                return (Class) clasz;
+            }
         }
     }
 

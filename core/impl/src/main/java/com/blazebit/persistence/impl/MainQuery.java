@@ -19,7 +19,7 @@ package com.blazebit.persistence.impl;
 import com.blazebit.persistence.parser.expression.AbstractCachingExpressionFactory;
 import com.blazebit.persistence.parser.expression.ExpressionFactory;
 import com.blazebit.persistence.spi.DbmsDialect;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.spi.JpqlFunction;
 import com.blazebit.persistence.spi.JpqlMacro;
 

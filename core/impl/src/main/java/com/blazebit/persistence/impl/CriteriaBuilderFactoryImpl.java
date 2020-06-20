@@ -34,7 +34,7 @@ import com.blazebit.persistence.spi.ConfigurationSource;
 import com.blazebit.persistence.spi.DbmsDialect;
 import com.blazebit.persistence.spi.EntityManagerFactoryIntegrator;
 import com.blazebit.persistence.spi.ExtendedQuerySupport;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.spi.JpaProviderFactory;
 import com.blazebit.persistence.spi.JpqlFunction;
 import com.blazebit.persistence.spi.JpqlFunctionGroup;

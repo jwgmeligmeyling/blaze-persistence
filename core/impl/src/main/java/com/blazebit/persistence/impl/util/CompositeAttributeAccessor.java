@@ -16,8 +16,8 @@
 
 package com.blazebit.persistence.impl.util;
 
-import com.blazebit.persistence.spi.AttributeAccessor;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.AttributeAccessor;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.blazebit.persistence.spi;
+package com.blazebit.persistence.parser;
 
 import java.util.Map;
 import java.util.Set;

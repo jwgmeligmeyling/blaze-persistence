@@ -17,7 +17,7 @@
 package com.blazebit.persistence.criteria;
 
 import com.blazebit.persistence.CriteriaBuilder;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.testsuite.AbstractCoreTest;
 import com.blazebit.persistence.testsuite.base.jpa.category.NoDatanucleus;
 import com.blazebit.persistence.testsuite.base.jpa.category.NoEclipselink;
@@ -138,11 +138,11 @@ public class TreatTest extends AbstractCoreTest {
 
         CriteriaBuilder<?> criteriaBuilder = cq.createCriteriaBuilder(em);
         String whereFragment = null;
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "parent", "parent", PolymorphicSub1.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "parent", "parent2", PolymorphicSub2.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "list", "list", PolymorphicSub1.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "children", "child", PolymorphicSub1.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "map", "map", PolymorphicSub1.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "parent", "parent", PolymorphicSub1.class, JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "parent", "parent2", PolymorphicSub2.class, JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "list", "list", PolymorphicSub1.class, JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "children", "child", PolymorphicSub1.class, JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "map", "map", PolymorphicSub1.class, JoinType.INNER, whereFragment);
         assertEquals("SELECT parent.sub1Value, list.sub1Value, child.sub1Value, " + joinAliasValue("map", "sub1Value") + ", INDEX(list), KEY(map)" +
                 " FROM PolymorphicBase base" +
                 " JOIN " + treatJoin("base.parent", PolymorphicSub1.class, JoinType.INNER) + " parent" +
@@ -184,11 +184,11 @@ public class TreatTest extends AbstractCoreTest {
 
         CriteriaBuilder<?> criteriaBuilder = cq.createCriteriaBuilder(em);
         String whereFragment = null;
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "parent", "parent", PolymorphicSub1.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "parent", "parent2", PolymorphicSub2.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "list", "list", PolymorphicSub1.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "children", "child", PolymorphicSub1.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
-        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "map", "map", PolymorphicSub1.class, com.blazebit.persistence.JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "parent", "parent", PolymorphicSub1.class, JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "parent", "parent2", PolymorphicSub2.class, JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "list", "list", PolymorphicSub1.class, JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "children", "child", PolymorphicSub1.class, JoinType.INNER, whereFragment);
+        whereFragment = treatJoinWhereFragment(PolymorphicBase.class, "map", "map", PolymorphicSub1.class, JoinType.INNER, whereFragment);
         assertEquals("SELECT TYPE(parent), TYPE(list), TYPE(child), TYPE(map), TYPE(KEY(map)), TYPE(parent_1), TYPE(relation1_1) " +
                 "FROM PolymorphicBase base" +
                 " LEFT JOIN base.parent parent_1" +

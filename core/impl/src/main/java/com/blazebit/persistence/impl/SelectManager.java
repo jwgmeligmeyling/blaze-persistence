@@ -56,7 +56,7 @@ import com.blazebit.persistence.parser.expression.PropertyExpression;
 import com.blazebit.persistence.parser.expression.StringLiteral;
 import com.blazebit.persistence.parser.expression.Subquery;
 import com.blazebit.persistence.parser.expression.SubqueryExpression;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.spi.JpqlFunction;
 import com.blazebit.persistence.spi.JpqlFunctionProcessor;
 

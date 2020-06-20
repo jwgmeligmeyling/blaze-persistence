@@ -16,11 +16,11 @@
 
 package com.blazebit.persistence.integration.hibernate.base;
 
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.integration.jpa.JpaMetamodelAccessorImpl;
-import com.blazebit.persistence.spi.JoinTable;
-import com.blazebit.persistence.spi.JpaMetamodelAccessor;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JoinTable;
+import com.blazebit.persistence.parser.JpaMetamodelAccessor;
+import com.blazebit.persistence.parser.JpaProvider;
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.CascadingAction;
 import org.hibernate.engine.spi.EntityKey;

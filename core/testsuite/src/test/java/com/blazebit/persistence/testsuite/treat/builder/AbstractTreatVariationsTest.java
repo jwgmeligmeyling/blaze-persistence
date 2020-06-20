@@ -19,7 +19,7 @@ package com.blazebit.persistence.testsuite.treat.builder;
 
 import com.blazebit.persistence.CriteriaBuilder;
 import com.blazebit.persistence.impl.CachingJpaProvider;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 import com.blazebit.persistence.testsuite.AbstractCoreTest;
 import com.blazebit.persistence.testsuite.entity.IntIdEntity;
 import com.blazebit.persistence.testsuite.treat.entity.Base;

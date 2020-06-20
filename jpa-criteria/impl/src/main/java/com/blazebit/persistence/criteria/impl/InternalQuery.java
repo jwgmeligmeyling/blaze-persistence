@@ -23,7 +23,7 @@ import com.blazebit.persistence.FullQueryBuilder;
 import com.blazebit.persistence.GroupByBuilder;
 import com.blazebit.persistence.HavingBuilder;
 import com.blazebit.persistence.JoinOnBuilder;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.MultipleSubqueryInitiator;
 import com.blazebit.persistence.OrderByBuilder;
 import com.blazebit.persistence.SelectBuilder;

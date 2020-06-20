@@ -30,7 +30,7 @@ import com.blazebit.persistence.testsuite.tx.TxVoidWork;
 import org.junit.Test;
 
 import com.blazebit.persistence.CriteriaBuilder;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.PaginatedCriteriaBuilder;
 import com.blazebit.persistence.ConfigurationProperties;
 import com.blazebit.persistence.spi.CriteriaBuilderConfiguration;

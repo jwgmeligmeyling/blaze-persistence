@@ -16,12 +16,12 @@
 
 package com.blazebit.persistence.impl;
 
-import com.blazebit.persistence.JoinType;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
-import com.blazebit.persistence.spi.JoinTable;
-import com.blazebit.persistence.spi.JpaMetamodelAccessor;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JoinType;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
+import com.blazebit.persistence.parser.JoinTable;
+import com.blazebit.persistence.parser.JpaMetamodelAccessor;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;

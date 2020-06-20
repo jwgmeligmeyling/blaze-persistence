@@ -26,7 +26,7 @@ import com.blazebit.persistence.impl.function.rowvalue.RowValueComparisonFunctio
 import com.blazebit.persistence.parser.SimpleQueryGenerator;
 import com.blazebit.persistence.parser.expression.Expression;
 import com.blazebit.persistence.spi.DbmsDialect;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import java.io.Serializable;
 import java.util.List;

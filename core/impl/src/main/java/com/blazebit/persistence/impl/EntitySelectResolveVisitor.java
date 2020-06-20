@@ -27,9 +27,9 @@ import com.blazebit.persistence.parser.expression.PathExpression;
 import com.blazebit.persistence.parser.expression.PropertyExpression;
 import com.blazebit.persistence.parser.expression.VisitorAdapter;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import javax.persistence.FetchType;
 import javax.persistence.metamodel.Attribute;

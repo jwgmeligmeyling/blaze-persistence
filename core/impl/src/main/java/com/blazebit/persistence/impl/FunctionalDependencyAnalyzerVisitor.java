@@ -45,9 +45,9 @@ import com.blazebit.persistence.parser.expression.WhenClauseExpression;
 import com.blazebit.persistence.parser.predicate.BooleanLiteral;
 import com.blazebit.persistence.parser.predicate.CompoundPredicate;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.ExtendedAttribute;
-import com.blazebit.persistence.spi.ExtendedManagedType;
-import com.blazebit.persistence.spi.JpaProvider;
+import com.blazebit.persistence.parser.ExtendedAttribute;
+import com.blazebit.persistence.parser.ExtendedManagedType;
+import com.blazebit.persistence.parser.JpaProvider;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EmbeddableType;

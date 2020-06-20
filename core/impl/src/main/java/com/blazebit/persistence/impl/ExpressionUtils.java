@@ -17,7 +17,7 @@
 package com.blazebit.persistence.impl;
 
 import com.blazebit.annotation.AnnotationUtils;
-import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.parser.JoinType;
 import com.blazebit.persistence.parser.AliasReplacementVisitor;
 import com.blazebit.persistence.parser.EntityMetamodel;
 import com.blazebit.persistence.parser.expression.AbortableVisitorAdapter;
@@ -42,7 +42,7 @@ import com.blazebit.persistence.parser.expression.TemporalLiteral;
 import com.blazebit.persistence.parser.expression.WhenClauseExpression;
 import com.blazebit.persistence.parser.predicate.BooleanLiteral;
 import com.blazebit.persistence.parser.util.JpaMetamodelUtils;
-import com.blazebit.persistence.spi.ExtendedManagedType;
+import com.blazebit.persistence.parser.ExtendedManagedType;
 
 import javax.persistence.Basic;
 import javax.persistence.ElementCollection;

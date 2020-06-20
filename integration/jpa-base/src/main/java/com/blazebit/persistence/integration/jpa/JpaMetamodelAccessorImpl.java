@@ -18,8 +18,8 @@ package com.blazebit.persistence.integration.jpa;
 
 import com.blazebit.persistence.parser.ListIndexAttribute;
 import com.blazebit.persistence.parser.MapKeyAttribute;
-import com.blazebit.persistence.spi.AttributePath;
-import com.blazebit.persistence.spi.JpaMetamodelAccessor;
+import com.blazebit.persistence.parser.AttributePath;
+import com.blazebit.persistence.parser.JpaMetamodelAccessor;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;

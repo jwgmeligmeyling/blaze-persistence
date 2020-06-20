@@ -16,6 +16,8 @@
 
 package com.blazebit.persistence.spi;
 
+import com.blazebit.persistence.parser.JpaProvider;
+
 import javax.persistence.EntityManager;
 
 /**

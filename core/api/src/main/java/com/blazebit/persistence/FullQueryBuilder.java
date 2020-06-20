@@ -16,6 +16,8 @@
 
 package com.blazebit.persistence;
 
+import com.blazebit.persistence.parser.JoinType;
+
 import javax.persistence.TypedQuery;
 import java.lang.reflect.Constructor;
 
