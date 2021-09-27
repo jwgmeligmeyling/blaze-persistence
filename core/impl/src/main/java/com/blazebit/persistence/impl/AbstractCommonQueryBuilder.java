@@ -3781,6 +3781,9 @@ public abstract class AbstractCommonQueryBuilder<QueryResultType, BuilderType, S
                 if (externalRepresentation && !isMainQuery) {
                     applyJpaLimit(sbSelectFrom);
                 }
+            } else if (externalRepresentation && hasLimit()) {
+                appendOrderByClause(sbSelectFrom);
+                applyJpaLimit(sbSelectFrom);
             }
         } finally {
             queryGenerator.setExternalRepresentation(originalExternalRepresentation);
