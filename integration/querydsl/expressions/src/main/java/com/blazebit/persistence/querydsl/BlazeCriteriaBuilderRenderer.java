@@ -95,6 +95,7 @@ import static com.blazebit.persistence.querydsl.JPQLNextOps.BIND;
 import static com.blazebit.persistence.querydsl.JPQLNextOps.LEFT_NESTED_SET_OPERATIONS;
 import static com.blazebit.persistence.querydsl.JPQLNextOps.SET_UNION;
 import static com.blazebit.persistence.querydsl.JPQLNextOps.WITH_RECURSIVE_ALIAS;
+import static com.blazebit.persistence.querydsl.JPQLNextQueryMixin.DEFAULT;
 import static com.blazebit.persistence.querydsl.SetOperationFlag.getSetOperationFlag;
 
 /**
@@ -527,7 +528,7 @@ public class BlazeCriteriaBuilderRenderer<T> {
                             setExpressionSubqueries(joinExpression.getCondition(), null, xJoinOnBuilder, JoinOnBuilderExpressionSetter.INSTANCE);
                         } else if (!hasCondition) {
                             // If there is no alias, assume a default join
-                            boolean defaultJoin = alias == null || joinExpression.hasFlag(AbstractBlazeJPAQuery.DEFAULT);
+                            boolean defaultJoin = alias == null || joinExpression.hasFlag(DEFAULT);
 
                             if (fetch) {
                                 if (defaultJoin) {

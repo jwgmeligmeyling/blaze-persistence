@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import static com.blazebit.persistence.querydsl.HintsAccessor.getHints;
+import static com.blazebit.persistence.querydsl.JPQLNextQueryMixin.DEFAULT;
 
 /**
  * Abstract base class for JPA API based implementations of the JPQLQuery interface
@@ -71,14 +72,11 @@ public abstract class AbstractBlazeJPAQuery<T, Q extends AbstractBlazeJPAQuery<T
      * Lateral join flag.
      * Can be added using {@link QueryMetadata#addJoinFlag(JoinFlag)}.
      * Used internally for implementing {@link #lateral()}.
+     *
+     * @deprecated Use {@link JPQLNextQueryMixin#LATERAL} instead.
      */
-    public static final JoinFlag LATERAL = new JoinFlag("LATERAL", JoinFlag.Position.BEFORE_TARGET);
-
-    /**
-     * Default join flag.
-     * Can be added using {@link QueryMetadata#addJoinFlag(JoinFlag)}.
-     */
-    public static final JoinFlag DEFAULT = new JoinFlag("DEFAULT");
+    @Deprecated
+    public static final JoinFlag LATERAL = JPQLNextQueryMixin.LATERAL;
 
     private static final Logger LOG = Logger.getLogger(AbstractBlazeJPAQuery.class.getName());
 

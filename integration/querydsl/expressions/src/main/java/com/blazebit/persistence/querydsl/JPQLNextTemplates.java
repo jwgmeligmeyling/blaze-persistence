@@ -18,8 +18,11 @@ package com.blazebit.persistence.querydsl;
 
 import com.blazebit.persistence.parser.util.TypeConverter;
 import com.blazebit.persistence.parser.util.TypeUtils;
+import com.querydsl.core.QueryMetadata;
 import com.querydsl.core.types.Ops;
+import com.querydsl.core.types.PathType;
 import com.querydsl.jpa.DefaultQueryHandler;
+import com.querydsl.jpa.JPAQueryMixin;
 import com.querydsl.jpa.JPQLTemplates;
 import com.querydsl.jpa.QueryHandler;
 
@@ -175,6 +178,16 @@ public class JPQLNextTemplates extends JPQLTemplates {
         add(JPQLNextOps.WINDOW_DEFINITION_4, "{0} {1} {2} {3}");
 
         add(JPQLNextOps.FILTER, "{0} FILTER (WHERE {1})");
+
+        add(PathType.MAPVALUE, "{0}[{1}]");
+        add(PathType.LISTVALUE, "{0}[{1}]");
+        add(PathType.ARRAYVALUE, "{0}[{1}]");
+
+        // One might expect "{0}[{1s}] instead, but we prefer to not convert to literals in the operation templates
+        // Instead, the user should do so using a literal expression.
+        add(PathType.ARRAYVALUE_CONSTANT, "{0}[{1}]");
+        add(PathType.MAPVALUE_CONSTANT, "{0}[{1}]");
+        add(PathType.LISTVALUE_CONSTANT, "{0}[{1}]");
     }
 
     @Override
@@ -184,6 +197,11 @@ public class JPQLNextTemplates extends JPQLTemplates {
             return converter.toString(constant);
         }
         return super.asLiteral(constant);
+    }
+
+    // No override for compatability with Querydsl < 5.0.0
+    public <T> JPAQueryMixin<T> createQueryMixin(T self, QueryMetadata metadata) {
+        return new JPQLNextQueryMixin<>(self, metadata);
     }
 
 }
