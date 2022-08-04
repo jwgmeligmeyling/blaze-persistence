@@ -17,15 +17,19 @@
 package com.blazebit.persistence.criteria.impl;
 
 import com.blazebit.persistence.BaseSubqueryBuilder;
+import com.blazebit.persistence.CommonQueryBuilder;
 import com.blazebit.persistence.CriteriaBuilder;
+import com.blazebit.persistence.DistinctBuilder;
 import com.blazebit.persistence.FromBuilder;
 import com.blazebit.persistence.FullQueryBuilder;
 import com.blazebit.persistence.GroupByBuilder;
 import com.blazebit.persistence.HavingBuilder;
 import com.blazebit.persistence.JoinOnBuilder;
 import com.blazebit.persistence.JoinType;
+import com.blazebit.persistence.LeafOngoingSetOperationSubqueryBuilder;
 import com.blazebit.persistence.MultipleSubqueryInitiator;
 import com.blazebit.persistence.OrderByBuilder;
+import com.blazebit.persistence.ParameterHolder;
 import com.blazebit.persistence.SelectBuilder;
 import com.blazebit.persistence.SelectObjectBuilder;
 import com.blazebit.persistence.SubqueryBuilder;
@@ -270,8 +274,7 @@ public class InternalQuery<T> implements Serializable {
     }
 
     /* Rendering */
-
-    public CriteriaBuilder<T> render(CriteriaBuilder<T> cb) {
+    public <X extends DistinctBuilder<X> & FromBuilder<X> & WhereBuilder<X> & GroupByBuilder<X> & OrderByBuilder<X> & ParameterHolder<X> & CommonQueryBuilder<X> & SelectBuilder<X>> X render(X cb) {
         if (distinct) {
             cb.distinct();
         }
@@ -460,19 +463,19 @@ public class InternalQuery<T> implements Serializable {
     private void renderJoins(FromBuilder<?> cb, RenderContextImpl context, AbstractFrom<?, ?> r, boolean fetching) {
         String path = r.resolveAlias(context);
 
-        renderJoins(cb, null, true, context, path, (Set<BlazeJoin<?, ?>>) (Set<?>) r.getBlazeJoins());
+        renderJoins(cb, (SubqueryInitiator<?>) null, true, context, path, (Set<BlazeJoin<?, ?>>) (Set<?>) r.getBlazeJoins());
         Collection<TreatedPath<?>> treatedPaths = (Collection<TreatedPath<?>>) (Collection) r.getTreatedPaths();
         if (treatedPaths != null && treatedPaths.size() > 0) {
             for (TreatedPath<?> treatedPath : treatedPaths) {
                 RootImpl<?> treatedRoot = (RootImpl<?>) treatedPath;
                 String treatedParentPath = "TREAT(" + path + " AS " + treatedPath.getTreatType().getName() + ')';
-                renderJoins(cb, null, fetching, context, treatedParentPath, (Set<BlazeJoin<?, ?>>) (Set<?>) treatedRoot.getBlazeJoins());
+                renderJoins(cb, (SubqueryInitiator<?>) null, fetching, context, treatedParentPath, (Set<BlazeJoin<?, ?>>) (Set<?>) treatedRoot.getBlazeJoins());
             }
         }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private SubqueryBuilder<?> renderSubqueryFrom(SubqueryInitiator<?> initiator, RenderContextImpl context) {
+    public SubqueryBuilder<?> renderSubqueryFrom(SubqueryInitiator<?> initiator, RenderContextImpl context) {
         SubqueryBuilder<?> cb = null;
         context.setClauseType(ClauseType.FROM);
 
@@ -497,6 +500,62 @@ public class InternalQuery<T> implements Serializable {
                     String path = getPath(alias, j, treatJoinType);
                     if (j.getAttribute() != null && j.getAttribute().getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
                         cb = (SubqueryBuilder<?>) renderJoins(cb, initiator, false, context, path, (Set<BlazeJoin<?, ?>>) (Set<?>) j.getBlazeJoins());
+                    } else {
+                        if (cb == null) {
+                            cb = initiator.from(path, joinAlias);
+                        } else {
+                            cb.from(path, joinAlias);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (RootImpl<?> r : roots) {
+            renderJoins(cb, context, r, false);
+        }
+
+        if (correlationRoots != null) {
+            for (AbstractFrom<?, ?> r : correlationRoots) {
+                Set<BlazeJoin<?, ?>> joins = (Set<BlazeJoin<?, ?>>) (Set<?>) r.getBlazeJoins();
+
+                for (BlazeJoin<?, ?> j : joins) {
+                    // We already rendered correlation joins for embedded paths
+                    if (j.getAttribute() != null && j.getAttribute().getPersistentAttributeType() != Attribute.PersistentAttributeType.EMBEDDED) {
+                        renderJoins(cb, context, (AbstractFrom<?, ?>) j, false);
+                    }
+                }
+            }
+        }
+
+        return cb;
+    }
+
+    public LeafOngoingSetOperationSubqueryBuilder<?> renderSubqueryFrom(LeafOngoingSetOperationSubqueryBuilder<?> initiator, RenderContextImpl context) {
+        LeafOngoingSetOperationSubqueryBuilder<?> cb = null;
+        context.setClauseType(ClauseType.FROM);
+
+        for (RootImpl<?> r : roots) {
+            String alias = r.resolveAlias(context);
+            if (cb == null) {
+                cb = initiator.from(r.getJavaType(), alias);
+            } else {
+                cb.from(r.getJavaType(), alias);
+            }
+        }
+
+        if (correlationRoots != null) {
+            for (AbstractFrom<?, ?> r : correlationRoots) {
+                String alias = r.resolveAlias(context);
+                Set<BlazeJoin<?, ?>> joins = (Set<BlazeJoin<?, ?>>) (Set<?>) r.getBlazeJoins();
+
+                for (BlazeJoin<?, ?> j : joins) {
+                    AbstractJoin<?, ?> join = (AbstractJoin<?, ?>) j;
+                    String joinAlias = join.resolveAlias(context);
+                    EntityType<?> treatJoinType = join.getTreatJoinType();
+                    String path = getPath(alias, j, treatJoinType);
+                    if (j.getAttribute() != null && j.getAttribute().getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
+                        cb = (LeafOngoingSetOperationSubqueryBuilder<?>) renderJoins(cb, initiator, false, context, path, (Set<BlazeJoin<?, ?>>) (Set<?>) j.getBlazeJoins());
                     } else {
                         if (cb == null) {
                             cb = initiator.from(path, joinAlias);
@@ -591,14 +650,91 @@ public class InternalQuery<T> implements Serializable {
                 }
             }
 
-            renderJoins(cb, null, fetching, context, alias, (Set<BlazeJoin<?, ?>>) (Set<?>) j.getBlazeJoins());
+            renderJoins(cb, (SubqueryInitiator<?>) null, fetching, context, alias, (Set<BlazeJoin<?, ?>>) (Set<?>) j.getBlazeJoins());
 
             Collection<TreatedPath<?>> treatedPaths = (Collection<TreatedPath<?>>) (Collection) join.getTreatedPaths();
             if (treatedPaths != null && treatedPaths.size() > 0) {
                 for (TreatedPath<?> treatedPath : treatedPaths) {
                     AbstractJoin<?, ?> treatedJoin = (AbstractJoin<?, ?>) treatedPath;
                     String treatedParentPath = "TREAT(" + alias + " AS " + treatedPath.getTreatType().getName() + ')';
-                    renderJoins(cb, null, fetching, context, treatedParentPath, (Set<BlazeJoin<?, ?>>) (Set<?>) treatedJoin.getBlazeJoins());
+                    renderJoins(cb, (SubqueryInitiator<?>) null, fetching, context, treatedParentPath, (Set<BlazeJoin<?, ?>>) (Set<?>) treatedJoin.getBlazeJoins());
+                }
+            }
+        }
+
+        return cb;
+    }
+
+    private FromBuilder<?> renderJoins(FromBuilder<?> cb, LeafOngoingSetOperationSubqueryBuilder<?> subqueryInitiator, boolean fetching, RenderContextImpl context, String parentPath, Set<BlazeJoin<?, ?>> joins) {
+        if (joins.isEmpty()) {
+            return cb;
+        }
+
+        for (BlazeJoin<?, ?> j : joins) {
+            AbstractJoin<?, ?> join = (AbstractJoin<?, ?>) j;
+            EntityType<?> treatJoinType = join.getTreatJoinType();
+            String alias = join.resolveAlias(context);
+            // TODO: implicit joins?
+            String path = getPath(parentPath, j, treatJoinType);
+            JoinOnBuilder<?> onBuilder = null;
+
+            // "Join" relations in embeddables
+            if (j.getAttribute() != null && j.getAttribute().getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
+                alias = path;
+            } else {
+                if (j.getOn() != null) {
+                    if (fetching && j.isFetch()) {
+                        throw new IllegalArgumentException("Fetch joining with on-condition is not allowed!" + j);
+                    } else if (j instanceof EntityJoin<?, ?>) {
+                        onBuilder = cb.joinOn(path, (EntityType<?>) j.getModel(), alias, getJoinType(j.getJoinType()));
+                    } else {
+                        onBuilder = cb.joinOn(path, alias, getJoinType(j.getJoinType()));
+                    }
+                } else {
+                    if (fetching && j.isFetch()) {
+                        ((FullQueryBuilder<?, ?>) cb).join(path, alias, getJoinType(j.getJoinType()), true);
+                    } else if (j instanceof EntityJoin<?, ?>) {
+                        throw new IllegalArgumentException("Entity join without on-condition is not allowed! " + j);
+                    } else if (cb == null) {
+                        cb = subqueryInitiator.from(path, alias);
+                    } else if (cb instanceof BaseSubqueryBuilder<?> && j.isCorrelated()) {
+                        ((SubqueryBuilder<?>) cb).from(path, alias);
+                    } else {
+                        cb.join(path, alias, getJoinType(j.getJoinType()));
+                    }
+                }
+            }
+
+            if (onBuilder != null) {
+                context.setClauseType(ClauseType.ON);
+                context.getBuffer().setLength(0);
+                ((AbstractSelection<?>) j.getOn()).render(context);
+                String expression = context.takeBuffer();
+                Map<String, InternalQuery<?>> aliasToSubqueries = context.takeAliasToSubqueryMap();
+
+                if (aliasToSubqueries.isEmpty()) {
+                    onBuilder.setOnExpression(expression);
+                } else {
+                    MultipleSubqueryInitiator<?> initiator = onBuilder.setOnExpressionSubqueries(expression);
+
+                    for (Map.Entry<String, InternalQuery<?>> subqueryEntry : aliasToSubqueries.entrySet()) {
+                        context.pushSubqueryInitiator(initiator.with(subqueryEntry.getKey()));
+                        subqueryEntry.getValue().renderSubquery(context);
+                        context.popSubqueryInitiator();
+                    }
+
+                    initiator.end();
+                }
+            }
+
+            renderJoins(cb, (LeafOngoingSetOperationSubqueryBuilder<?>) null, fetching, context, alias, (Set<BlazeJoin<?, ?>>) (Set<?>) j.getBlazeJoins());
+
+            Collection<TreatedPath<?>> treatedPaths = (Collection<TreatedPath<?>>) (Collection) join.getTreatedPaths();
+            if (treatedPaths != null && treatedPaths.size() > 0) {
+                for (TreatedPath<?> treatedPath : treatedPaths) {
+                    AbstractJoin<?, ?> treatedJoin = (AbstractJoin<?, ?>) treatedPath;
+                    String treatedParentPath = "TREAT(" + alias + " AS " + treatedPath.getTreatType().getName() + ')';
+                    renderJoins(cb, (LeafOngoingSetOperationSubqueryBuilder<?>) null, fetching, context, treatedParentPath, (Set<BlazeJoin<?, ?>>) (Set<?>) treatedJoin.getBlazeJoins());
                 }
             }
         }

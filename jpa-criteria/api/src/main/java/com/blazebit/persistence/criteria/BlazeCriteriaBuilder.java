@@ -638,4 +638,6 @@ public interface BlazeCriteriaBuilder extends CriteriaBuilder {
      * @return the ordered set-aggregate function expression
      */
     public BlazeOrderedSetAggregateFunctionExpression<String> listaggDistinct(Expression<String> expression, Expression<String> separator);
+
+    public <T> BlazeCriteriaSetQuery<T> union(BlazeCriteriaQuery<T> a, BlazeCriteriaQuery<T> b);
 }
