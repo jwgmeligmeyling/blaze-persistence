@@ -70,4 +70,5 @@ public class BlazeCriteria {
     public static <T> BlazeCriteriaQuery<T> get(CriteriaBuilderFactory criteriaBuilderFactory, Class<T> clazz) {
         return get(criteriaBuilderFactory).createQuery(clazz);
     }
+
 }

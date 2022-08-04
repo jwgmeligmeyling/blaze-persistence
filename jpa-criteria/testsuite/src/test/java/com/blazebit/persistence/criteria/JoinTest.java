@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import javax.persistence.criteria.JoinType;
 
+import com.blazebit.persistence.FinalSetOperationCriteriaBuilder;
 import com.blazebit.persistence.testsuite.base.jpa.category.NoDatanucleus;
 import org.junit.Test;
 
@@ -43,6 +44,36 @@ public class JoinTest extends AbstractCoreTest {
         // TODO: Remove me when DataNucleus fixes map value access: https://github.com/datanucleus/datanucleus-rdbms/issues/230
         cleanDatabase();
     }
+
+    @Test
+    public void testUnion() {
+        FinalSetOperationCriteriaBuilder<Document> documentFinalSetOperationCriteriaBuilder = cbf.create(em, Document.class)
+                .from(Document.class, "d").select("d").where("d.id").eqLiteral(1)
+                .union()
+                .from(Document.class, "d").select("d").where("d.id").eqLiteral(2)
+                .endSet();
+
+        BlazeCriteriaQuery<Document> cq = BlazeCriteria.get(cbf, Document.class);
+        BlazeCriteriaBuilder cb = cq.getCriteriaBuilder();
+        BlazeRoot<Document> root = cq.from(Document.class, "document");
+        cq.where(cb.equal(root.get(Document_.id), cb.literal(1L)));
+        cq.select(root);
+
+        BlazeCriteriaQuery<Document> cqb = BlazeCriteria.get(cbf, Document.class);
+        BlazeCriteriaBuilder cbb = cqb.getCriteriaBuilder();
+        BlazeRoot<Document> rootb = cqb.from(Document.class, "document");
+        cqb.where(cbb.equal(rootb.get(Document_.id), cb.literal(2L)));
+        cqb.select(rootb);
+
+        BlazeCriteriaSetQuery<Document> union = cb.union(cq, cqb);
+        FinalSetOperationCriteriaBuilder<Document> criteriaBuilder = union.createCriteriaBuilder(em);
+        String queryString = criteriaBuilder.getQueryString();
+
+        assertEquals("SELECT document FROM Document document WHERE document.id = 1L\n" +
+                "UNION\n" +
+                "SELECT document FROM Document document WHERE document.id = 2L", queryString);
+    }
+
 
     @Test
     public void joinTypesSingular() {

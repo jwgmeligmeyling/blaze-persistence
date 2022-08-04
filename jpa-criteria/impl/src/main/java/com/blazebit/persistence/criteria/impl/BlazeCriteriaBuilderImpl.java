@@ -23,6 +23,7 @@ import com.blazebit.persistence.criteria.BlazeCollectionJoin;
 import com.blazebit.persistence.criteria.BlazeCriteriaBuilder;
 import com.blazebit.persistence.criteria.BlazeCriteriaDelete;
 import com.blazebit.persistence.criteria.BlazeCriteriaQuery;
+import com.blazebit.persistence.criteria.BlazeCriteriaSetQuery;
 import com.blazebit.persistence.criteria.BlazeCriteriaUpdate;
 import com.blazebit.persistence.criteria.BlazeExpression;
 import com.blazebit.persistence.criteria.BlazeFunctionExpression;
@@ -1375,5 +1376,10 @@ public class BlazeCriteriaBuilderImpl implements BlazeCriteriaBuilder, CriteriaB
     @Override
     public BlazeOrderedSetAggregateFunctionExpression<String> listaggDistinct(Expression<String> expression, Expression<String> separator) {
         return new OrderedSetAggregationFunction<>(this, String.class, "LISTAGG", true, expression, separator);
+    }
+
+    @Override
+    public <T> BlazeCriteriaSetQuery<T> union(BlazeCriteriaQuery<T> a, BlazeCriteriaQuery<T> b) {
+        return new BlazeCriteriaSetBuilderImpl<>(this, a.getResultType(), (BlazeCriteriaQueryImpl<T>) a,  (BlazeCriteriaQueryImpl<T>) b);
     }
 }

@@ -280,4 +280,7 @@ public class BlazeCriteriaQueryImpl<T> implements BlazeCriteriaQuery<T> {
         return query.render(cb);
     }
 
+    public InternalQuery<T> getInternalQuery() {
+        return query;
+    }
 }
