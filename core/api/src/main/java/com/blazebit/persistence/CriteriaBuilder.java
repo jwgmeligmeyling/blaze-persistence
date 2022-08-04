@@ -69,4 +69,13 @@ public interface CriteriaBuilder<T> extends FullQueryBuilder<T, CriteriaBuilder<
 
     @Override
     public <Y> CriteriaBuilder<Y> selectNew(ObjectBuilder<Y> builder);
+
+    /**
+     * Returns the result type of this query.
+     *
+     * @return The result type of this query
+     */
+    @Override
+    public Class<T> getResultType();
+
 }

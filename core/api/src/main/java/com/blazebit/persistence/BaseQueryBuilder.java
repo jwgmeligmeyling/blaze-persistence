@@ -32,6 +32,6 @@ public interface BaseQueryBuilder<T, X extends BaseQueryBuilder<T, X>> extends C
      *
      * @return The result type of this query
      */
-    public Class<T> getResultType();
+    public Class<? extends Object> getResultType();
     
 }
